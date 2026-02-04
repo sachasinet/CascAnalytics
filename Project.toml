@@ -1,0 +1,14 @@
+name = "CascAnalytics"
+uuid = "a96afca2-631f-41a4-9b45-9032bffc6a01"
+authors = ["BouncyFrog <sacha.sinet@hotmail.com>"]
+version = "0.1.0"
+
+[deps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"

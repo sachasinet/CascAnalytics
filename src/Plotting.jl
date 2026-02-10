@@ -1079,8 +1079,8 @@ begin
     @load "./Data/ResultGISCessi.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parameters xmax tiptimeGIS criteriumcorr tmax
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1, linestyle = :dash)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
     band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
@@ -1142,8 +1142,8 @@ begin
     ax3 = Axis(gb[1, 2])
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1, linestyle = :dash)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
     band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
@@ -1205,8 +1205,8 @@ begin
     ax3 = Axis(gc[1, 2])
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1, linestyle = :dash)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
     band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)

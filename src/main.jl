@@ -303,7 +303,7 @@ y = Matrix(trajectory)[2, :];
 P = Matrix(trajectory)[3, :];
 T = Matrix(trajectory)[4, :];
 Q = 1 .+ parametersCessiVeg.nupl.μcar .* (x .- y) .^ 2;
-
+brCessi.specialpoint
 fig = Figure()
 begin
     ax1 = Axis(fig[1, 1])
@@ -546,4 +546,92 @@ tiptimeGISno = 1 ./ ϵno * 180/470 * tiptimeGIS
 tiptimeGISsafe = 1 ./ ϵsafe * 180/470 * tiptimeGIS
 
 saferange = tiptimeGISno - tiptimeGISsafe
+#endregion
+
+#region To remove - bifurcation diagram
+
+struct parametersVeg
+    vec::Vector
+    nupl::NamedTuple
+
+    function parametersVeg(; #default value of all parameters
+        explabel=4,
+        α=3.6 * 10^3, #all that has to do with Cessi
+        μcar=6.2,
+        tdiff=180,
+        F0=1.1,
+        Q0=NaN,
+        r=0.0,
+        rP=1.0, #all that has to do with Veg
+        Pd=4.5,
+        b=0.6,
+        K=90.,
+        hP=0.5,
+        rm=0.3,
+        mA=0.15,
+        hA=10.,
+        mf=0.11,
+        hf=64.,
+        β=7,
+        P0=3.,
+        T0=100.,
+        distance=NaN,
+        j=0)
+
+        # Put in nupl ----------
+        nupl = (explabel=explabel,
+            α=α,
+            μcar=μcar,
+            tdiff=tdiff,
+            F0=F0,
+            Q0=Q0,
+            r=r,
+            rP=rP,
+            Pd=Pd,
+            b=b,
+            K=K,
+            hP=hP,
+            rm=rm,
+            mA=mA,
+            hA=hA,
+            mf=mf,
+            hf=hf,
+            β=β,
+            P0=P0,
+            T0=T0,
+            distance=distance,
+            j=j)
+
+        # Put in vec ----------
+        vec = [explabel, α, μcar, tdiff, F0, Q0, r, rP, Pd, b, K, hP, rm, mA, hA, mf, hf, β, P0, T0, distance, j]
+
+
+
+        new(vec, nupl)
+    end
+end
+
+function FVeg(state, pnupl)
+    P, T = state
+    dstate = similar(state)
+    @unpack rP, Pd, b, K, hP, rm, mA, hA, mf, hf, β = pnupl
+
+    dstate[1] = rP * (Pd + b * T / K - P)
+    dstate[2] = P / (hP + P) * rm * T * (1 - T / K) - mA * T * hA / (T + hA) - mf * T * hf^β / (hf^β + T^β)
+
+    return dstate
+end
+
+pVeg = parametersVeg()
+state0 = [5.0038820248103635, 75.5823037215545]
+
+FVeg(state0, pVeg.nupl)
+begin
+recordFromSolution(x, p; k...) = (P=x[1], T=x[2])
+prob = BifurcationProblem(FVeg, state0, pVeg.nupl, (@optic _.Pd); record_from_solution=recordFromSolution)
+opts_br = ContinuationPar(p_min=0.0, p_max=5., ds=-0.001, dsmax=0.001, max_steps=100000)
+brVeg = continuation(prob, PALC(), opts_br)
+
+lines(brVeg.branch.param, brVeg.branch.T)
+end
 #endregion

@@ -350,8 +350,8 @@ struct parametersCessiVeg
         Q0=NaN,
         r=0.0,
         rP=1.0, #all that has to do with Veg
-        Pd=4.5,
-        b=0.6,
+        Pd=3.9,
+        b=1.32,
         K=90.,
         hP=0.5,
         rm=0.3,

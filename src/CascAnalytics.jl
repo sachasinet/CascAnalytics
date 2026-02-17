@@ -43,23 +43,18 @@ function c(state, pvec, t) #coupling functions used for each models
 
         return coup
 
-    elseif explabel == 4
+    elseif explabel == 3
         x, y, P, T = state
         explabel, α, μcar, tdiff, F0, Q0, r, rP, Pd, b, K, hP, rm, mA, hA, mf, hf, β, P0, T0, distance, j, ϵ, γ = pvec
 
         ΔQ = 1 + μcar * (x - y)^2 - Q0
         return ΔQ
 
-    elseif explabel == 3
-        V, x, y = state
-        explabel, α, μcar, tdiff, F0, Q0, rate, distance, k, ϵ, γ = pvec
 
-        flux = -(3 * V - V^3 - 2) # careful if you use a rate, then 2 is not really the position
-        return flux
 
-    elseif explabel == 5
+    elseif explabel == 4
         V, x, y = state
-        explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j, ϵ, γ = pvec
+        explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j, ϵ, γ = pvec
 
         flux = -(alead * V^3 + blead * V^2 + clead * V + (Vp - Vm)^3 / (2 * (Tm - Tp)) * (Tf + r .* t) + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp))) # careful if you use a rate, then Tp is not really the position
         return flux
@@ -95,16 +90,14 @@ function δ1f(statemax, pnupl, tmax) #Jacobian functions used for each models
     if explabel == 1 || explabel == 2
         x, y = statemax
         δ1f = hcat((3 - 3 * x^2))
-    elseif explabel == 4
+    elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
         δ1f = [[-1 - α - ((x - y)^2) * μcar - 2x * (x - y) * μcar, 2x * (x - y) * μcar] [-2(x - y) * y * μcar, -1 - ((x - y)^2) * μcar + 2(x - y) * y * μcar]]
-    elseif explabel == 3
-        V, x, y = xmax
-        δ1f = hcat((3 - 3 * V^2))
-    elseif explabel == 5
+
+    elseif explabel == 4
         V, x, y = statemax
-        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j = pnupl
+        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j = pnupl
         δ1f = hcat((3 * alead * V^2 + 2 * blead * V + clead))
     end
 
@@ -119,16 +112,14 @@ function δ11c(statemax, pnupl, tmax) #Hessian functions used for each models
     elseif explabel == 2
         x, y = statemax
         δ11c = hcat(-8 / 245 * π^2 * cos(1 / 7 * (π + 4 * π * x)))
-    elseif explabel == 4
+    elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
         δ11c = [[2μcar, -2μcar] [-2μcar, 2μcar]]
-    elseif explabel == 3
-        V, x, y = xmax
-        δ11c = hcat(-(-6 * V))
-    elseif explabel == 5
+
+    elseif explabel == 4
         V, x, y = statemax
-        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j = pnupl
+        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j = pnupl
         δ11c = hcat(-(6 * alead * V + 2 * blead))
     end
 
@@ -143,16 +134,14 @@ function δ1c(statemax, pnupl, tmax) #Gradient functions used for each models
     elseif explabel == 2
         x, y = statemax
         δ1c = [-2 / 35 * π * sin(1 / 7 * (π + 4 * π * x)),]
-    elseif explabel == 4
+    elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
         δ1c = [2(x - y) * μcar, -2(x - y) * μcar]
-    elseif explabel == 3
-        V, x, y = xmax
-        δ1c = [-(3 - 3 * V^2),]
-    elseif explabel == 5
+
+    elseif explabel == 4
         V, x, y = statemax
-        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j = pnupl
+        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j = pnupl
         δ1c = [-(3 * alead * V^2 + 2 * blead * V + clead),]
     end
 
@@ -166,7 +155,7 @@ function f(statemax, pnupl, tmax) #R.H.S for each models
         @unpack explabel, a, b, μ0, r, distance, j = pnupl
         return [(3 * x - x^3 - μ0 - r * tmax),]
 
-    elseif explabel == 4
+    elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
 
@@ -174,12 +163,10 @@ function f(statemax, pnupl, tmax) #R.H.S for each models
         f2 = F0 + r * tmax - y * (1 + μcar * (x - y)^2) #Note that here, we take the system at the criticality, but normally there should be the rate
 
         return [f1, f2]
-    elseif explabel == 3
-        V, x, y = xmax
-        return [(3 * V - V^3 - 2),]
-    elseif explabel == 5
+
+    elseif explabel == 4
         V, x, y = statemax
-        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j = pnupl
+        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j = pnupl
         return [alead * V^3 + blead * V^2 + clead * V + (Vp - Vm)^3 / (2 * (Tm - Tp)) * (Tf + r .* tmax) + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp)),]
     end
 end
@@ -192,16 +179,14 @@ function δ2f(statemax, pnupl, tmax) #Derivative of the R.H.S. w.r.t. the slow t
     elseif explabel == 2
         @unpack explabel, a, b, μ0, r, distance, j = pnupl
         δ2f = [-r,]
-    elseif explabel == 4
+    elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
         δ2f = [0., r]
-    elseif explabel == 3
-        V, x, y = xmax
-        δ2f = hcat(-(-6 * V))
-    elseif explabel == 5
+
+    elseif explabel == 4
         V, x, y = statemax
-        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j = pnupl
+        @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j = pnupl
         δ2f = [(Vp - Vm)^3 / (2 * (Tm - Tp)) * r,]
     end
 
@@ -214,11 +199,10 @@ function δ12c(statemax, pnupl, tmax) #This is zero in each cases considered her
         δ12c = [0.,]
     elseif explabel == 2
         δ12c = [0.,]
-    elseif explabel == 4
-        δ12c = [0., 0.]
     elseif explabel == 3
-        δ12c = [0.,]
-    elseif explabel == 5
+        δ12c = [0., 0.]
+
+    elseif explabel == 4
         δ12c = [0.,]
     end
 
@@ -231,11 +215,10 @@ function δ22c(statemax, pnupl, tmax) #This is zero in each cases considered her
         δ22c = 0.
     elseif explabel == 2
         δ22c = 0.
-    elseif explabel == 4
-        δ22c = 0.
     elseif explabel == 3
         δ22c = 0.
-    elseif explabel == 5
+
+    elseif explabel == 4
         δ22c = 0.
     end
 
@@ -243,7 +226,7 @@ function δ22c(statemax, pnupl, tmax) #This is zero in each cases considered her
 end
 
 function S(statemax, pnupl, tmax) #Leading system coefficient S
-  return (f(statemax, pnupl, tmax))' * δ11c(statemax, pnupl, tmax) * f(statemax, pnupl, tmax) +  (δ1c(statemax, pnupl, tmax))' * δ1f(statemax, pnupl, tmax) * f(statemax, pnupl, tmax) + (δ1c(statemax, pnupl, tmax))' * δ2f(statemax, pnupl, tmax) + 2 * (δ12c(statemax, pnupl, tmax))' * f(statemax, pnupl, tmax) + δ22c(statemax, pnupl, tmax)
+    return (f(statemax, pnupl, tmax))' * δ11c(statemax, pnupl, tmax) * f(statemax, pnupl, tmax) + (δ1c(statemax, pnupl, tmax))' * δ1f(statemax, pnupl, tmax) * f(statemax, pnupl, tmax) + (δ1c(statemax, pnupl, tmax))' * δ2f(statemax, pnupl, tmax) + 2 * (δ12c(statemax, pnupl, tmax))' * f(statemax, pnupl, tmax) + δ22c(statemax, pnupl, tmax)
 end
 
 function criterium(ϵrange, γrange, parameters, statemax, F; tmax=0.0) #Criterium for safe overshoot
@@ -269,7 +252,7 @@ function criteriumcorr(ϵtrange, γtrange, parameters, F) #Criterium corrollary 
 
     for i ∈ 1:length(ϵtrange)
         for k ∈ 1:length(γtrange)
-            criteriumcorr[i, k] = F/4 * sqrt.(1 / (6 * γtrange[k] * ϵtrange[i]^3)) * (γtrange[k] * ϵtrange[i] * 4 - parameters.nupl.distance)
+            criteriumcorr[i, k] = F / 4 * sqrt.(1 / (6 * γtrange[k] * ϵtrange[i]^3)) * (γtrange[k] * ϵtrange[i] * 4 - parameters.nupl.distance)
         end
     end
 
@@ -287,8 +270,8 @@ struct parametersGeneric
         explabel=NaN,
         a=2,
         b=0.2,
-        μ0=1.5,
-        r=0.0,
+        μ0=9 / 8,
+        r=0.1,
     )
         explabel == 1 ? j = 1 : j = 0
 
@@ -342,13 +325,13 @@ struct parametersCessiVeg
     nupl::NamedTuple
 
     function parametersCessiVeg(; #default value of all parameters
-        explabel=4,
+        explabel=3,
         α=3.6 * 10^3, #all that has to do with Cessi
         μcar=6.2,
         tdiff=180,
         F0=1.1,
         Q0=NaN,
-        r=0.0,
+        r=1e-4,
         rP=1.0, #all that has to do with Veg
         Pd=3.9,
         b=1.32,
@@ -425,24 +408,23 @@ struct parametersGISCessi
     nupl::NamedTuple
 
     function parametersGISCessi(; #default value of all parameters
-        explabel=5,
+        explabel=4,
         α=3.6 * 10^3, #all that has to do with Cessi
         μcar=6.2,
         tdiff=180,
         F0=1.1,
         Q0=NaN,
-        Tf = 0.,
-        Tp = 1.52, 
-        Tm = 0.3, 
-        Vp = 0.77, 
-        Vm = 0.3526554620064224, 
-        τmelt = 470.0,
+        Tf=0.,
+        Tp=1.52,
+        Tm=0.3,
+        Vp=0.77,
+        Vm=0.3526554620064224,
+        tmelt=470.0,
         alead=-1,
         blead=3 * (Vm + Vp) / 2,
         clead=-3 * Vm * Vp,
         dlead=(Vp - Vm)^3 / (2 * (Tm - Tp)) * Tf + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp)),
-        τlead=τmelt,
-        r=0.0,
+        r=1e-4,
         distance=NaN,
         j=1)
 
@@ -453,23 +435,22 @@ struct parametersGISCessi
             tdiff=tdiff,
             F0=F0,
             Q0=Q0,
-            Tf = Tf, 
-            Tp = Tp, 
-            Tm = Tm, 
-            Vp = Vp, 
-            Vm = Vm, 
-            τmelt = τmelt,
+            Tf=Tf,
+            Tp=Tp,
+            Tm=Tm,
+            Vp=Vp,
+            Vm=Vm,
+            tmelt=tmelt,
             alead=-1,
             blead=3 * (Vm + Vp) / 2,
             clead=-3 * Vm * Vp,
             dlead=(Vp - Vm)^3 / (2 * (Tm - Tp)) * Tf + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp)),
-            τlead=τlead,
             r=r,
             distance=distance,
             j=j)
 
         # Put in vec ----------
-        vec = [explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j]
+        vec = [explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead, r, distance, j]
 
 
 
@@ -479,27 +460,17 @@ end
 
 function FGISCessi!(dstate, state, pvec, t)
     V, x, y = state
-    explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, r, distance, j, ϵ, γ = pvec
+    explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j, ϵ, γ = pvec
 
-    dstate[1] = (alead*V^3 + blead*V^2 + clead*V + (Vp - Vm)^3 / (2 * (Tm - Tp)) * (Tf + r * t) + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp)))
+    dstate[1] = (alead * V^3 + blead * V^2 + clead * V + (Vp - Vm)^3 / (2 * (Tm - Tp)) * (Tf + r * t) + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp)))
 
     flux = CascAnalytics.c(state, pvec, t)
 
-    dstate[2] = (-α * (x - 1) - x * (1 + μcar * (x - y)^2))*1/ϵ
-    dstate[3] = (F0 + γ * ϵ^j * flux - y * (1 + μcar * (x - y)^2))*1/ϵ
+    dstate[2] = (-α * (x - 1) - x * (1 + μcar * (x - y)^2)) * 1 / ϵ
+    dstate[3] = (F0 + γ * ϵ^j * flux - y * (1 + μcar * (x - y)^2)) * 1 / ϵ
 
     return nothing
 end
-
-# function FGIS(state, pnupl) #probably removed?
-#     V, = state
-#     dstate = similar(state)
-#     @unpack explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, τmelt, alead, blead, clead, dlead, τlead, rate, distance, k = pnupl
-
-#     dstate[1] = alead*V^3 + blead*V^2 + clead*V + (Vp - Vm)^3 / (2 * (Tm - Tp)) * Tf + (Tp * Vm^2 * (Vm - 3Vp) - Tm * Vp^2 * (Vp - 3Vm)) / (2 * (Tm - Tp))
-    
-#     return dstate
-# end
 
 function tipeventGISCessi(u, t, integrator)
     return (u[3] > 1.0)

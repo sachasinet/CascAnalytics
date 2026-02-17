@@ -62,11 +62,11 @@ palette = cgrad([lightred, lightyellow], 2, categorical=true);
 
 #region Generic derivative
 #We run one trajectory, to compute tmax and statemax (in terms of the slow time ϵt)
-r = 0.1
-parametersDer = CascAnalytics.parametersGeneric(explabel=1, r=r, μ0=9 / 8)
+r = 0.001
+parametersDer = CascAnalytics.parametersGeneric(explabel=1, r=r, μ0= 9 / 8)
 
 ϵ = 0.05
-γ = 1.4
+γ = 0.8
 append!(parametersDer.vec, ϵ, γ)
 
 state0 = [1.5, sqrt(parametersDer.nupl.b / parametersDer.nupl.a)]
@@ -110,7 +110,7 @@ begin
 end
 f
 
-# @save "./Data/trajDer1p4.jld2" t x y coupling parametersDer ϵ γ
+# @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
 
 idmax = findmax(coupling)[2]
 statemax = [x[idmax], y[idmax]] #system at tmax
@@ -180,9 +180,8 @@ begin
 end
 fig
 
-# @save "./Data/trajDer1p4.jld2" t x y coupling parametersDer
-# @save "./Data/ResultDerGen.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r criteriumcorr xmax tmax
-# @save "./Data/ResultDerGenr1p0.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r criteriumcorr xmax tmax
+@save "./Data/ResultDerGen.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
+@save "./Data/ResultDerGenr0p001.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
 #endregion
 
 #region Generic nonlinear
@@ -191,7 +190,7 @@ r = 0.1
 parametersNonl = CascAnalytics.parametersGeneric(explabel=2, r=r, μ0=9 / 8)
 
 ϵ = 0.05
-γ = 0.4
+γ = 0.8
 append!(parametersNonl.vec, ϵ, γ)
 
 state0 = [1.5, sqrt(parametersNonl.nupl.b / parametersNonl.nupl.a)]
@@ -239,6 +238,8 @@ idmax = findmax(coupling)[2]
 statemax = [x[idmax], y[idmax]] #system at tmax
 tmax = t[idmax] #tmax
 
+# @save "./Data/trajNonl0p8.jld2" t x y coupling parametersNonl ϵ γ
+
 #Map
 ϵrangeNonl = range(0.001, 0.1, 400)
 γrangeNonl = range(0.001, 3.0, 400)
@@ -280,6 +281,8 @@ begin
     ax.ylabel = L"Coupling strength $\gamma$"
 end
 fig
+
+@save "./Data/ResultNonlGen.jld2" resultNonl ϵrangeNonl γrangeNonl critNonl parametersNonl r statemax tmax
 #endregion
 
 #region CessiVeg
@@ -288,10 +291,10 @@ r = 1e-4;
 parametersCessiVeg = CascAnalytics.parametersCessiVeg(r=r, Q0=brCessi.branch.Q[1], distance=-(brVeg.branch.param[1] - brVeg.specialpoint[1].param));
 
 ϵ = 1 / parametersCessiVeg.nupl.tdiff; #there should be the reference one
-γ = 0.62;
+γ = 0.5;
 append!(parametersCessiVeg.vec, ϵ, γ);
 
-state0 = [0.9987362171488928, 0.24147297094357806, 5.0038820248103635 / parametersCessiVeg.nupl.P0, 75.5823037215545 / parametersCessiVeg.nupl.T0]; #equilibrium at reference
+state0 = [0.9987362171488928, 0.24147297094357806,  1.669532138020044, 0.755861191404637]; #equilibrium at reference
 tspan = (0, (2.0 - 1.1) / r);
 
 prob = ODEProblem(CascAnalytics.FCessiVeg!, state0, tspan, parametersCessiVeg.vec);
@@ -300,8 +303,8 @@ prob = ODEProblem(CascAnalytics.FCessiVeg!, state0, tspan, parametersCessiVeg.ve
 t = trajectory.t;
 x = Matrix(trajectory)[1, :];
 y = Matrix(trajectory)[2, :];
-P = Matrix(trajectory)[3, :];
-T = Matrix(trajectory)[4, :];
+P = Matrix(trajectory)[3, :]
+T = Matrix(trajectory)[4, :]
 Q = 1 .+ parametersCessiVeg.nupl.μcar .* (x .- y) .^ 2;
 brCessi.specialpoint
 fig = Figure()
@@ -321,6 +324,11 @@ begin
     lines!(ax3, t, T)
 end
 fig
+
+brVeg.specialpoint[1]
+brCessi.branch.Q[1]
+
+# @save "./Data/TrajCessiVegg0.5.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
 
 idmax = findmin(Q .- parametersCessiVeg.nupl.Q0)[2]
 statemax = [x[idmax], y[idmax], NaN, NaN] #system at tmax
@@ -366,9 +374,13 @@ for i ∈ 1:(brVeg.specialpoint[1].idx-1)
     d[i] = (brVeg.eig[i].eigenvals[1] .* brVeg.eig[i].eigenvals[1]) / (brVeg.specialpoint[1].param - brVeg.branch.param[i])
 end
 F = sqrt(-d[brVeg.specialpoint[1].idx-1] / 2)
+CascAnalytics.S(statemax, parametersCessiVeg.nupl, tmax)
+
 
 #we compute the criterium
 critCessiVeg = CascAnalytics.criterium(ϵrangeCessiVeg, γrangeCessiVeg, parametersCessiVeg, statemax, F; tmax=tmax)
+
+@save "./Data/ResultCessiVegr1.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
 
 begin
     fig = Figure()
@@ -389,7 +401,7 @@ begin
     ax4 = Axis(fig[2:3, 2])
     heatmap!(ax4, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap=Reverse(:greys))
     contour!(ax4, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels=[-1,], color=:red, linewidth=1)
-    hlines!([0.57])
+    hlines!([parametersCessiVeg.nupl.distance ./ (CascAnalytics.c(statemax, parametersCessiVeg.vec, tmax))])
 
     scatter!(ax4, ϵ, γ)
 
@@ -401,18 +413,18 @@ fig
 
 #region GISCessi 
 #We run one trajectory, to compute tmax and statemax (in terms of the slow time ϵt)
-r = 0.5e-2;
+r = 1e-4;
 parametersGISCessi = CascAnalytics.parametersGISCessi(r=r, Q0 = brCessi.branch.Q[1], Tf = 1.1, distance=brCessi.specialpoint[1].param - brCessi.param[1]);
 
-ϵ = parametersGISCessi.nupl.tdiff/parametersGISCessi.nupl.τmelt;
+ϵ = parametersGISCessi.nupl.tdiff/parametersGISCessi.nupl.tmelt;
 γ = 3.8;
 append!(parametersGISCessi.vec, ϵ, γ)
 
 state0 = [0.8987549713444614, 0.9987362171488928, 0.24147297094357806];
-tspan = (0, 2*0.9*1/r);
+tspan = (0, 3*0.9*1/r);
 
 prob = ODEProblem(CascAnalytics.FGISCessi!, state0, tspan, parametersGISCessi.vec)
-@time trajectory = solve(prob, RK4(), dt=0.004; abstol=1e-10, reltol=1e-8, maxiters=1e7);
+@time trajectory = solve(prob, Rosenbrock23(), dt=0.04; adaptive=false, maxiters=1e7);
 
 t = trajectory.t;
 V = Matrix(trajectory)[1, :];
@@ -432,14 +444,14 @@ begin
     lines!(ax2, parametersGISCessi.nupl.F0 .+ γ .* ϵ .* flux, Q; color = :green)
 
     ax3 = Axis(fig[2, 1])
-    lines!(ax3, parametersGISCessi.nupl.τmelt .* t, V; color = :blue)
-    lines!(ax3, parametersGISCessi.nupl.τmelt .* t, y; color = :green)
+    lines!(ax3, parametersGISCessi.nupl.tmelt .* t, V; color = :blue)
+    lines!(ax3, parametersGISCessi.nupl.tmelt .* t, y; color = :green)
 
     xlims!(ax3,2000000, 2100000)
 end
 fig
 
-# @save "./Data/trajDer1p4.jld2" t x y coupling parametersDer ϵ γ
+# @save "./Data/TrajGISCessieps1.6.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
 
 idmax = findmax(flux)[2]
 statemax = [V[idmax], NaN, NaN] #system at tmax
@@ -496,7 +508,7 @@ a0 = parametersGISCessi.nupl.dlead #this in somputed at the critical, as has to 
 γtrange = γrangeGISCessi .* -1/(3*a3)*(a2^2 - 3*a3*a1)^(1/2)
 
 critcorr = CascAnalytics.criteriumcorr(ϵtrange, γtrange, parametersGISCessi, F)
-
+parametersGISCessi
 #we plot the results figure
 begin
     fig = Figure()
@@ -509,8 +521,8 @@ begin
     lines!(ax2, parametersGISCessi.nupl.F0 .+ γ .* ϵ .* flux, Q; color = :green)
 
     ax3 = Axis(fig[2, 1])
-    lines!(ax3, parametersGISCessi.nupl.τmelt .* t, V; color = :blue)
-    lines!(ax3, parametersGISCessi.nupl.τmelt .* t, y; color = :green)
+    lines!(ax3, parametersGISCessi.nupl.tmelt .* t, V; color = :blue)
+    lines!(ax3, parametersGISCessi.nupl.tmelt .* t, y; color = :green)
 
     xlims!(ax3,2000000, 2100000)
 
@@ -533,6 +545,8 @@ begin
 end
 fig
 
+# @save "./Data/ResultGISCessir1.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+
 #we compute the range of safe overshoot for the reference γ
 γrangeGISCessi[101] #where the physical coupling is more or Less
 couplingcomp = CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi .* γrangeGISCessi[101] #the coupling component for this γ
@@ -548,8 +562,8 @@ tiptimeGISsafe = 1 ./ ϵsafe * 180/470 * tiptimeGIS
 saferange = tiptimeGISno - tiptimeGISsafe
 #endregion
 
-#region To remove - bifurcation diagram
-
+#region Reparamatrization of Veg 
+# bifurcation diagram
 struct parametersVeg
     vec::Vector
     nupl::NamedTuple
@@ -563,8 +577,8 @@ struct parametersVeg
         Q0=NaN,
         r=0.0,
         rP=1.0, #all that has to do with Veg
-        Pd=4.5,
-        b=0.6,
+        Pd=3.9,
+        b=1.32,
         K=90.,
         hP=0.5,
         rm=0.3,
@@ -627,11 +641,130 @@ state0 = [5.0038820248103635, 75.5823037215545]
 
 FVeg(state0, pVeg.nupl)
 begin
-recordFromSolution(x, p; k...) = (P=x[1], T=x[2])
+recordFromSolution(x, p; k...) = (P=x[1], T=x[2]/100)
 prob = BifurcationProblem(FVeg, state0, pVeg.nupl, (@optic _.Pd); record_from_solution=recordFromSolution)
 opts_br = ContinuationPar(p_min=0.0, p_max=5., ds=-0.001, dsmax=0.001, max_steps=100000)
 brVeg = continuation(prob, PALC(), opts_br)
 
 lines(brVeg.branch.param, brVeg.branch.T)
 end
+
+@save "./Data/brVeg.jld2" brVeg
+#endregion
+
+#region CessiVeg
+#We run one trajectory, to compute tmax and statemax (in terms of the slow time ϵt)
+r = 1e-4;
+parametersCessiVeg = CascAnalytics.parametersCessiVeg(r=r, Q0=brCessi.branch.Q[1], distance=-(brVeg.branch.param[1] - brVeg.specialpoint[1].param), Pd=3.9, b = 1.32);
+
+ϵ = 1 / parametersCessiVeg.nupl.tdiff; #there should be the reference one
+γ = 0.62;
+append!(parametersCessiVeg.vec, ϵ, γ);
+
+state0 = [0.9987362171488928, 0.24147297094357806, 5.0038820248103635 / parametersCessiVeg.nupl.P0, 75.5823037215545 / parametersCessiVeg.nupl.T0]; #equilibrium at reference
+tspan = (0, (2.0 - 1.1) / r);
+
+prob = ODEProblem(CascAnalytics.FCessiVeg!, state0, tspan, parametersCessiVeg.vec);
+@time trajectory = solve(prob, RK4(), dt=0.004; abstol=1e-10, reltol=1e-8, maxiters=1e7);
+
+t = trajectory.t;
+x = Matrix(trajectory)[1, :];
+y = Matrix(trajectory)[2, :];
+P = Matrix(trajectory)[3, :];
+T = Matrix(trajectory)[4, :];
+Q = 1 .+ parametersCessiVeg.nupl.μcar .* (x .- y) .^ 2;
+brCessi.specialpoint
+fig = Figure()
+begin
+    ax1 = Axis(fig[1, 1])
+    lines!(ax1, brCessi.branch.param, brCessi.branch.Q)
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q)
+    # scatter!(ax1, [parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t[overthresholdid]], [Q[overthresholdid]]; color=:red)
+    # scatter!(ax1, [parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t[end - undertresholdid + 1]], [Q[end - undertresholdid + 1]]; color=:red)
+
+    ax2 = Axis(fig[1, 2])
+    lines!(ax2, brVeg.branch.param, brVeg.branch.T)
+    lines!(ax2, parametersCessiVeg.nupl.Pd .+ γ .* (Q .- brCessi.branch.Q[1]), T)
+
+    ax3 = Axis(fig[2, 1])
+    lines!(ax3, t, Q)
+    lines!(ax3, t, T)
+end
+fig
+
+idmax = findmin(Q .- parametersCessiVeg.nupl.Q0)[2]
+statemax = [x[idmax], y[idmax], NaN, NaN] #system at tmax
+tmax = t[idmax] #tmax
+
+#we find tiptimeCessi (for the reference value of ϵ and low r)
+fluxx = -parametersCessiVeg.nupl.α .* (x .- 1) - x .* (1 .+ parametersCessiVeg.nupl.μcar .* (x .- y).^2);
+fluxy = parametersCessiVeg.nupl.F0 .+ r .* t .- y .* (1 .+ parametersCessiVeg.nupl.μcar .* (x .- y).^2);
+flux = sqrt.(fluxx .^ 2 .+ fluxy .^ 2);
+
+threshold = 0.3;
+overthresholdid = findfirst(x -> x > threshold, flux./maximum(flux));
+undertresholdid = findfirst(x -> x > threshold, reverse(flux./maximum(flux)));
+tiptimeCessi = (t[end - undertresholdid + 1] - t[overthresholdid])*180
+
+#Map
+ϵrangeCessiVeg = range(0.001, 0.045, 400) # normally upper bound at 1 ./50 * 1/180 * tiptimeAMOC = 0.044439423848619986
+γrangeCessiVeg = range(0.0, 0.88, 400)
+
+param_list = [(p1, p2) for p1 in ϵrangeCessiVeg, p2 in γrangeCessiVeg]
+param_list = vec(param_list)
+
+function prob_func(prob, i, repeat)
+    par = CascAnalytics.parametersCessiVeg(r=r, Q0=brCessi.branch.Q[1], distance=-(brVeg.branch.param[1] - brVeg.specialpoint[1].param), Pd=3.9, b = 1.32)
+    ϵ = param_list[i][1]
+    γ = param_list[i][2]
+    append!(par.vec, ϵ, γ)
+
+    remake(prob, p=par.vec)
+end
+
+resultCessiVeg = CascAnalytics.Map(ϵrangeCessiVeg, γrangeCessiVeg, tspan, prob, prob_func, CascAnalytics.tippingcallbackCessiVeg)
+
+contourf(ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; levels=0.0:1.0:2.0)
+
+#we compute the value of the coefficient F. Here, has to be computed numerically
+eig1 = zeros(Float64, length(brVeg.branch.param))
+eig2 = zeros(Float64, length(brVeg.branch.param))
+d = zeros(Float64, length(brVeg.branch.param))
+for i ∈ 1:(brVeg.specialpoint[1].idx-1)
+    eig1[i] = real(brVeg.eig[i].eigenvals[1])
+    eig2[i] = real(brVeg.eig[i].eigenvals[2])
+    d[i] = (brVeg.eig[i].eigenvals[1] .* brVeg.eig[i].eigenvals[1]) / (brVeg.specialpoint[1].param - brVeg.branch.param[i])
+end
+F = sqrt(-d[brVeg.specialpoint[1].idx-1] / 2)
+
+#we compute the criterium
+critCessiVeg = CascAnalytics.criterium(ϵrangeCessiVeg, γrangeCessiVeg, parametersCessiVeg, statemax, F; tmax=tmax)
+
+begin
+    fig = Figure()
+    ax1 = Axis(fig[1, 1])
+    lines!(ax1, brCessi.branch.param, brCessi.branch.Q)
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q)
+    # scatter!(ax1, [parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t[overthresholdid]], [Q[overthresholdid]]; color=:red)
+    # scatter!(ax1, [parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t[end - undertresholdid + 1]], [Q[end - undertresholdid + 1]]; color=:red)
+
+    ax2 = Axis(fig[1, 2])
+    lines!(ax2, brVeg.branch.param, brVeg.branch.T)
+    lines!(ax2, parametersCessiVeg.nupl.Pd .+ γ .* (Q .- brCessi.branch.Q[1]), T)
+
+    ax3 = Axis(fig[2, 1])
+    lines!(ax3, t, Q)
+    lines!(ax3, t, T)
+
+    ax4 = Axis(fig[2:3, 2])
+    heatmap!(ax4, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap=Reverse(:greys))
+    contour!(ax4, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels=[-1,], color=:red, linewidth=1)
+    # hlines!([0.57])
+
+    scatter!(ax4, ϵ, γ)
+
+    ax4.xlabel = L"Timescale separation $\epsilon$"
+    ax4.ylabel = L"Coupling strength $\gamma$"
+end
+fig
 #endregion

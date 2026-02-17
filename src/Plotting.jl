@@ -84,7 +84,7 @@ begin
     # (a) Left column
     # -------------------------------------------------------------------------
     ga = f[1:2, 1] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{a})";
+    Label(ga[1, 1, TopLeft()], L"(\text{a})";
         fontsize = 9,
         padding  = (0, 5, 5, 0),
         halign   = :right
@@ -105,6 +105,7 @@ begin
     ax2a = Axis(ga[2, 1], limits = (0, 20/ϵ, -0.02, 0.3))
 
     # c1(x)
+    @load "./Data/trajNonl0p8.jld2" t x y coupling parametersNonl ϵ
     lines!(ax2a, t/ϵ, coupling; color = nonlcolor)
 
     # c2(x)
@@ -162,7 +163,7 @@ begin
     # (b) Top-right: slow subsystem bifurcation + trajectory
     # -------------------------------------------------------------------------
     gb = f[1, 2] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{b})";
+    Label(gb[1, 1, TopLeft()], L"(\text{b})";
         fontsize = 9,
         padding  = (0, 5, 5, 0),
         halign   = :right
@@ -173,11 +174,11 @@ begin
     ax1 = Axis(
         gb[1, 1:2],
         limits = (
-            -abs(parametersDer.nupl.μ0 + parametersDer.nupl.r * t[end]),
-            parametersDer.nupl.μ0 + parametersDer.nupl.r * t[end],
+            parametersDer.nupl.μ0,
+            3,
             nothing, nothing
         ),
-        xticks = (-2:2:2, ["-2", "0", L"\mu_c"])
+        xticks = [0,1.5,2,2.5]
     )
 
     ibegin = brScurve.specialpoint[1].idx
@@ -202,7 +203,7 @@ begin
     # (c) Bottom-right: fast subsystem phase portraits + legend
     # -------------------------------------------------------------------------
     gc = f[2, 2] = GridLayout()
-    Label(gc[1, 1, TopLeft()], L"(\textit{c})";
+    Label(gc[1, 1, TopLeft()], L"(\text{c})";
         fontsize = 9,
         padding  = (0, 5, 5, 0),
         halign   = :right
@@ -277,9 +278,6 @@ begin
 
     f
 end
-f
-
-save("./FigWerk/gen5.pdf", f, pt_per_unit=1)
 
 save("./Manuscript/Figures/Fig1.pdf", f, pt_per_unit=1)
 #endregion
@@ -298,7 +296,7 @@ begin
     # (a) Nonlinear coupling (left panel)
     # -------------------------------------------------------------------------
     gb = f[1, 1] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{a})";
+    Label(gb[1, 1, TopLeft()], L"(\text{a})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -307,7 +305,7 @@ begin
 
     ax = Axis(gb[1, 1])
 
-    @load "./Data/ResultNonlGen.jld2" resultNonl ϵrangeNonl γrangeNonl critNonl parametersNonl r xmax tmax
+    @load "./Data/ResultNonlGen.jld2" resultNonl ϵrangeNonl γrangeNonl critNonl parametersNonl r statemax tmax
 
     contourf!(ax, ϵrangeNonl, γrangeNonl, resultNonl; colormap = palette, levels = 2)
     contour!(ax, ϵrangeNonl, γrangeNonl, critNonl; levels = [1], color = :black, linewidth = 1)
@@ -327,7 +325,7 @@ begin
     # (b) Derivative coupling (right panel)
     # -------------------------------------------------------------------------
     ga = f[1, 2] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{b})";
+    Label(ga[1, 1, TopLeft()], L"(\text{b})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -336,13 +334,13 @@ begin
 
     ax = Axis(ga[1, 1])
 
-    @load "./Data/ResultDerGen.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r criteriumcorr xmax tmax
+    @load "./Data/ResultDerGen.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
 
     contourf!(ax, ϵrangeDer, γrangeDer, resultDer; colormap = palette, levels = 2)
     contour!(ax, ϵrangeDer, γrangeDer, critDer;        levels = [1], color = :black, linewidth = 1)
-    contour!(ax, ϵrangeDer, γrangeDer, criteriumcorr;  levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+    contour!(ax, ϵrangeDer, γrangeDer, critcorr;  levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
-    band_y = parametersDer.nupl.distance ./ (CascAnalytics.c(xmax, parametersDer.vec, tmax) .* ϵrangeDer)
+    band_y = parametersDer.nupl.distance ./ (CascAnalytics.c(statemax, parametersDer.vec, tmax) .* ϵrangeDer)
     band!(ax, ϵrangeDer, zeros(length(ϵrangeDer)), band_y; color = :white)
     band!(ax, ϵrangeDer, zeros(length(ϵrangeDer)), band_y; color = nocolor)
 
@@ -359,18 +357,11 @@ begin
     f
 end
 
-parametersNonl.nupl.r
-
-save("./FigWerk/gencrit3.pdf", f, pt_per_unit=1)
-
 save("./Manuscript/Figures/Fig2.pdf", f, pt_per_unit=1)
 #endregion
 
 #region Fig3
 palette = cgrad([safecolor, unsafecolor], 2, categorical=true)
-
-
-palette = cgrad([safecolor, unsafecolor], 2, categorical = true)
 
 begin
     size_inches = (5.0, 2.5)
@@ -380,13 +371,13 @@ begin
 
     # Small helper to avoid repeating the same block 4×
     function add_panel!(ax, file; title, hidey = false)
-        @load file resultDer ϵrangeDer γrangeDer critDer parametersDer r criteriumcorr xmax tmax
+        @load file resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
 
         contourf!(ax, ϵrangeDer, γrangeDer, resultDer; colormap = palette, levels = 2)
         contour!(ax, ϵrangeDer, γrangeDer, critDer;       levels = [1], color = :black, linewidth = 1)
-        contour!(ax, ϵrangeDer, γrangeDer, criteriumcorr; levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+        contour!(ax, ϵrangeDer, γrangeDer, critcorr; levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
-        band_y = parametersDer.nupl.distance ./ (CascAnalytics.c(xmax, parametersDer.vec, tmax) .* ϵrangeDer)
+        band_y = parametersDer.nupl.distance ./ (CascAnalytics.c(statemax, parametersDer.vec, tmax) .* ϵrangeDer)
         band!(ax, ϵrangeDer, zeros(length(ϵrangeDer)), band_y; color = :white)
         band!(ax, ϵrangeDer, zeros(length(ϵrangeDer)), band_y; color = nocolor)
 
@@ -403,19 +394,20 @@ begin
         return nothing
     end
 
-    ax = Axis(f[1, 1], xticks = 0.02:0.04:0.08)
-    add_panel!(ax, "./Data/ResultDerGenr1p0.jld2"; title = L"r=1.0", hidey = false)
-
-    ax = Axis(f[1, 2], xticks = 0.02:0.04:0.08)
-    add_panel!(ax, "./Data/ResultDerGen.jld2"; title = L"r=0.1", hidey = true)
+    ax = Axis(f[1, 4], xticks = 0.02:0.04:0.08)
+    add_panel!(ax, "./Data/ResultDerGenr1p0.jld2"; title = L"r=1", hidey = true)
+    ax.ylabel = "" 
 
     ax = Axis(f[1, 3], xticks = 0.02:0.04:0.08)
-    add_panel!(ax, "./Data/ResultDerGenr0p01.jld2"; title = L"r=0.01", hidey = true)
+    add_panel!(ax, "./Data/ResultDerGen.jld2"; title = L"r=10^{-1}", hidey = true)
     ax.ylabel = "" 
 
-    ax = Axis(f[1, 4], xticks = 0.02:0.04:0.08)
-    add_panel!(ax, "./Data/ResultDerGenr0p001.jld2"; title = L"r=0.001", hidey = true)
+    ax = Axis(f[1, 2], xticks = 0.02:0.04:0.08)
+    add_panel!(ax, "./Data/ResultDerGenr0p01.jld2"; title = L"r=10^{-2}", hidey = true)
     ax.ylabel = "" 
+
+    ax = Axis(f[1, 1], xticks = 0.02:0.04:0.08)
+    add_panel!(ax, "./Data/ResultDerGenr0p001.jld2"; title = L"r=10^{-3}", hidey = false)
 
     colgap!(f.layout, 0.0)
 
@@ -441,7 +433,7 @@ begin
     # (a) Time series (top-left)
     # -------------------------------------------------------------------------
     ga = f[1, 1] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{a})";
+    Label(ga[1, 1, TopLeft()], L"(\text{a})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -450,30 +442,30 @@ begin
 
     axm1 = Axis(ga[1, 1:2], yticks = [1, 3, 5])
 
-    @load "./Data/TrajCessiVegg0.62.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(axm1, t .* 180, Q; color = leadcolor)
 
     hidexdecorations!(axm1)
     hideydecorations!(axm1, ticks = false, ticklabels = false, label = false)
     ylims!(axm1, 0.7, 5.0)
-    xlims!(axm1, 0, 60000)
+    xlims!(axm1, 0, 600000)
     axm1.ylabel = L"Q"
 
-    ax0 = Axis(ga[2, 1:2], yticks = [0.5, 0.7], xticks = [0, 20000, 40000, 60000])
+    ax0 = Axis(ga[2, 1:2], yticks = [0.5, 0.7], xticks = [0, 200000, 400000, 600000])
 
-    @load "./Data/TrajCessiVegg0.62.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax0, t .* 180, T; color = unsafecolor)
 
-    @load "./Data/TrajCessiVegg0.5.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.5.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax0, t .* 180, T; color = nocolor)
 
-    @load "./Data/TrajCessiVegg0.58.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.57.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax0, t .* 180, T; color = safecolor)
 
     hideydecorations!(ax0, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax0, ticks = false, ticklabels = false, label = false)
     ylims!(ax0, 0.4, 0.82)
-    xlims!(ax0, 0, 60000)
+    xlims!(ax0, 0, 600000)
 
     ax0.ylabel = L"T"
     ax0.xlabel = L"\text{Model years}"
@@ -485,7 +477,7 @@ begin
     # (b) Bifurcation-style panels (bottom-left)
     # -------------------------------------------------------------------------
     gb = f[2, 1] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{b})";
+    Label(gb[1, 1, TopLeft()], L"(\text{b})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -502,18 +494,18 @@ begin
     lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
 
-    @load "./Data/TrajCessiVegg0.62.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
-    lines!(ax1, parameters.nupl.F0 .+ parameters.nupl.rate .* t, Q; color = leadcolor)
+    @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q; color = leadcolor)
 
     xlims!(1.1, 1.4)
 
     ax1.ylabel = L"Q"
-    ax1.xlabel = L"F_0"
+    ax1.xlabel = L"F"
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax2 = Axis(gb[1, 2], yaxisposition = :right)
+    ax2 = Axis(gb[1, 2], yaxisposition = :right, xticks = [-1.6, -0.8, 0.0])
 
     iend = brVeg.specialpoint[3].idx
     sn1  = brVeg.specialpoint[1].idx
@@ -521,23 +513,23 @@ begin
     sn3  = brVeg.specialpoint[3].idx
     sn4  = brVeg.specialpoint[4].idx
 
-    lines!(ax2, brVeg.branch.param[1:sn1]   .- parameters.nupl.Pd, brVeg.branch.T[1:sn1];   color = :black)
-    lines!(ax2, brVeg.branch.param[sn1:sn2] .- parameters.nupl.Pd, brVeg.branch.T[sn1:sn2]; color = :black, linestyle = :dash)
-    lines!(ax2, brVeg.branch.param[sn2:sn3] .- parameters.nupl.Pd, brVeg.branch.T[sn2:sn3]; color = :black)
+    lines!(ax2, brVeg.branch.param[1:sn1]   .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[1:sn1];   color = :black)
+    lines!(ax2, brVeg.branch.param[sn1:sn2] .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[sn1:sn2]; color = :black, linestyle = :dash)
+    lines!(ax2, brVeg.branch.param[sn2:sn3] .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[sn2:sn3]; color = :black)
 
-    @load "./Data/TrajCessiVegg0.62.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax2, γ .* (Q .- brCessi.branch.Q[1]), T; color = unsafecolor)
 
-    @load "./Data/TrajCessiVegg0.58.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.57.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax2, γ .* (Q .- brCessi.branch.Q[1]), T; color = safecolor)
 
-    @load "./Data/TrajCessiVegg0.5.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
+    @load "./Data/TrajCessiVegg0.5.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax2, γ .* (Q .- brCessi.branch.Q[1]), T; color = nocolor)
 
     ax2.xlabel = L"\gamma\Delta Q"
     ax2.ylabel = L"T"
 
-    xlims!(ax2, -2.3, -1.0)
+    xlims!(ax2, -2.3, -0.0)
     ylims!(ax2, 0.4, 0.8)
 
     hideydecorations!(ax2, ticks = false, ticklabels = false, label = false)
@@ -549,7 +541,7 @@ begin
     # (c) Parameter plane (right column)
     # -------------------------------------------------------------------------
     gc = f[1:2, 2] = GridLayout()
-    Label(gc[1, 1, TopLeft()], L"(\textit{c})";
+    Label(gc[1, 1, TopLeft()], L"(\text{c})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -558,14 +550,14 @@ begin
 
     ax3 = Axis(gc[1, 1])
 
-    @load "./Data/ResultCessiVeg.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeAMOC xmax
+    @load "./Data/ResultCessiVeg.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax
 
     contourf!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap = palette, levels = 2)
     contour!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels = [-1], color = :black, linewidth = 1)
 
     γcrit = findfirst(x -> x > -1, critCessiVeg)
 
-    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(xmax, parametersCessiVeg.vec, 0)
+    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
 
@@ -574,7 +566,7 @@ begin
     vlines!(ax3, 0.005555; color = :grey, linestyle = :dot)
 
     scatter!(ax3, 0.005555, 0.62; marker = :star5, strokewidth = 1, markersize = 7, color = unsafecolor)
-    scatter!(ax3, 0.005555, 0.58; marker = :star5, strokewidth = 1, markersize = 7, color = safecolor)
+    scatter!(ax3, 0.005555, 0.57; marker = :star5, strokewidth = 1, markersize = 7, color = safecolor)
     scatter!(ax3, 0.005555, 0.5;  marker = :star5, strokewidth = 1, markersize = 7, color = nocolor)
 
     ax3.xlabel = L"Timescale separation $\epsilon$"
@@ -592,7 +584,7 @@ begin
     hidespines!(ax3_top, :l, :r, :b)
 
     tiptimeticks = [400, 200, 100, 50]
-    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeAMOC
+    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeCessi
 
     time_labels  = string.(tiptimeticks)
     ax3_top.xticks = (eps_ticks, time_labels)
@@ -611,7 +603,7 @@ begin
     f
 end
 
-save("./Manuscript/Figures/FigAMOCAmaz.pdf", f, pt_per_unit=1)
+save("./Manuscript/Figures/Fig4.pdf", f, pt_per_unit=1)
 #endregion
 
 #region Fig5
@@ -630,7 +622,7 @@ begin
     # (a) Time series (top-left)
     # -------------------------------------------------------------------------
     ga = f[1, 1] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{a})";
+    Label(ga[1, 1, TopLeft()], L"(\text{a})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -639,13 +631,13 @@ begin
 
     axm1 = Axis(ga[1, 1:2])
 
-    @load "./Data/TrajGISCessieps1.0.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps1.0.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(axm1, t ./ ϵ .* 180, V; color = nocolor)
 
-    @load "./Data/TrajGISCessieps1.6.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps1.6.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(axm1, t ./ ϵ .* 180, V; color = safecolor)
 
-    @load "./Data/TrajGISCessieps2.4.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps2.4.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(axm1, t ./ ϵ .* 180, V; color = unsafecolor)
 
     hidexdecorations!(axm1)
@@ -657,13 +649,13 @@ begin
 
     ax0 = Axis(ga[2, 1:2])
 
-    @load "./Data/TrajGISCessieps1.0.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps1.0.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(ax0, t ./ ϵ .* 180, Q; color = nocolor)
 
-    @load "./Data/TrajGISCessieps1.6.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps1.6.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(ax0, t ./ ϵ .* 180, Q; color = safecolor)
 
-    @load "./Data/TrajGISCessieps2.4.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
+    @load "./Data/TrajGISCessieps2.4.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
     lines!(ax0, t ./ ϵ .* 180, Q; color = unsafecolor)
 
     hideydecorations!(ax0, ticks = false, ticklabels = false, label = false)
@@ -682,7 +674,7 @@ begin
     # (b) Bifurcation-style panels (bottom-left)
     # -------------------------------------------------------------------------
     gb = f[2, 1] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{b})";
+    Label(gb[1, 1, TopLeft()], L"(\text{b})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -699,40 +691,40 @@ begin
     lines!(ax1, brGIS.branch.param[sn1:sn2], brGIS.branch.V[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brGIS.branch.param[sn2:end], brGIS.branch.V[sn2:end]; color = :black)
 
-    @load "./Data/TrajGISCessieps1.0.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax1, 1.1 .+ parameters.nupl.rate .* t, V; color = :grey)
+    @load "./Data/TrajGISCessieps1.0.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax1, 1.1 .+ parametersGISCessi.nupl.r .* t, V; color = :grey)
 
     xlims!(ax1, 1.1, 2.3)
 
     ax1.ylabel = L"V"
-    ax1.xlabel = L"T_f"
+    ax1.xlabel = L"\delta T"
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax2 = Axis(gb[1, 2], yaxisposition = :right)
+    ax2 = Axis(gb[1, 2], yaxisposition = :right, xticks = [-0.5, -0.25, 0.0])
 
     iend = brCessi.specialpoint[3].idx
     sn1  = brCessi.specialpoint[1].idx
     sn2  = brCessi.specialpoint[2].idx
 
-    lines!(ax2, brCessi.branch.param[1:sn1],   brCessi.branch.Q[1:sn1];   color = :black)
-    lines!(ax2, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
-    lines!(ax2, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
+    lines!(ax2, -1 .* brCessi.branch.param[1:sn1] .+ parametersGISCessi.nupl.F0,   brCessi.branch.Q[1:sn1];   color = :black)
+    lines!(ax2, -1 .* brCessi.branch.param[sn1:sn2] .+ parametersGISCessi.nupl.F0, brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
+    lines!(ax2, -1 .* brCessi.branch.param[sn2:end] .+ parametersGISCessi.nupl.F0, brCessi.branch.Q[sn2:end]; color = :black)
 
-    @load "./Data/TrajGISCessieps1.6.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax2, parameters.nupl.F0 .+ γ .* ϵ .* flux, Q; color = safecolor)
+    @load "./Data/TrajGISCessieps1.6.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax2, -1 .* γ .* ϵ .* flux, Q; color = safecolor)
 
-    @load "./Data/TrajGISCessieps2.4.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax2, parameters.nupl.F0 .+ γ .* ϵ .* flux, Q; color = unsafecolor)
+    @load "./Data/TrajGISCessieps2.4.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax2, -1 .* γ .* ϵ .* flux, Q; color = unsafecolor)
 
-    @load "./Data/TrajGISCessieps1.0.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax2, parameters.nupl.F0 .+ γ .* ϵ .* flux, Q; color = nocolor)
+    @load "./Data/TrajGISCessieps1.0.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax2, -1 .* γ .* ϵ .* flux, Q; color = nocolor)
 
     ax2.xlabel = L"\gamma\dot{V}"
     ax2.ylabel = L"T"
 
-    xlims!(ax2, 1.1, 1.6)
+    xlims!(ax2, -0.5, 0.0)
 
     hideydecorations!(ax2, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax2, ticks = false, ticklabels = false, label = false)
@@ -743,7 +735,7 @@ begin
     # (c) Parameter plane (right column)
     # -------------------------------------------------------------------------
     gc = f[1:2, 2] = GridLayout()
-    Label(gc[1, 1, TopLeft()], L"(\textit{c})";
+    Label(gc[1, 1, TopLeft()], L"(\text{c})";
         fontsize = 9,
         font     = :bold,
         padding  = (0, 5, 5, 0),
@@ -752,12 +744,12 @@ begin
 
     ax3 = Axis(gc[1, 1])
 
-    @load "./Data/ResultGISCessi.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parameters xmax tiptimeGIS criteriumcorr tmax
+    @load "./Data/ResultGISCessi.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr; levels = [1], color = :black, linestyle = :dash, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critcorr; levels = [1], color = :black, linestyle = :dash, linewidth = 1)
 
-    band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
+    band_y = parametersGISCessi.nupl.distance ./ (CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = nocolor)
 
@@ -804,7 +796,7 @@ begin
 end
 
 
-save("./Manuscript/Figures/FigGISAMOC.pdf", f, pt_per_unit=1)
+save("./Manuscript/Figures/Fig5.pdf", f, pt_per_unit=1)
 #endregion
 
 #region FigS1
@@ -814,7 +806,7 @@ save("./Manuscript/Figures/FigGISAMOC.pdf", f, pt_per_unit=1)
 palette = cgrad([safecolor, unsafecolor], 2, categorical=true)
 
 begin
-    size_inches = (5.3, 7.0)
+    size_inches = (5.3, 5.0)
     size_pt     = 72 .* size_inches
 
     f = Figure(size = size_pt, fontsize = 7, padding = 0)
@@ -822,15 +814,8 @@ begin
     # -------------------------------------------------------------------------
     # (a) Row 1
     # -------------------------------------------------------------------------
-    ga = f[1, 1] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{a})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(ga[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 1]; xticks = [1.2, 1.4])
 
     iend = brCessi.specialpoint[3].idx
     sn1  = brCessi.specialpoint[1].idx
@@ -840,47 +825,46 @@ begin
     lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
 
-    @load "./Data/TrajCessiVegg0.62.jld2" rate parameters ϵ γ state0 tspan prob t x y P T Q
-    lines!(ax1, parameters.nupl.F0 .+ parameters.nupl.rate .* t, Q; color = leadcolor)
-
+    @load "./Data/ResultCessiVeg.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q; color = leadcolor)
+    println(r)
     xlims!(ax1, 1.1, 1.6)
 
     ax1.ylabel = L"Q"
-    ax1.xlabel = L"F_0"
+
+    text!(ax1, 1.55, 4.6; text=L"r = 10^{-4}", align=[:right, :top], fontsize=7)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(ga[1, 2])
-
-    @load "./Data/ResultCessiVeg.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeAMOC xmax
+    ax3 = Axis(f[2, 1])
 
     contourf!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap = palette, levels = 2)
     contour!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels = [-1], color = :black, linewidth = 1)
 
     γcrit = findfirst(x -> x > -1, critCessiVeg)
 
-    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(xmax, parametersCessiVeg.vec, 0)
+    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
 
     ylims!(ax3, 0.0, 0.88)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
     ax3.ylabel = L"Coupling strength $\gamma$"
 
+    text!(ax3, 0.017, 0.83; text=L"r = 10^{-4}", align=[:right, :top], fontsize=7)
+
     # Top axis for AMOC tipping duration (years)
-    ax3_top = Axis(ga[1, 2];
+    ax3_top = Axis(f[2, 1];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{AMOC tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [400, 200, 100, 50]
-    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeAMOC
+    tiptimeticks = [200, 100, 50]
+    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeCessi
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
     xlims!(ax3,     ϵrangeCessiVeg[1], ϵrangeCessiVeg[end])
@@ -889,15 +873,8 @@ begin
     # -------------------------------------------------------------------------
     # (b) Row 2
     # -------------------------------------------------------------------------
-    gb = f[2, 1] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{b})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(gb[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 2]; xticks = [1.2, 1.4])
 
     iend = brCessi.specialpoint[3].idx
     sn1  = brCessi.specialpoint[1].idx
@@ -907,44 +884,47 @@ begin
     lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
 
-    @load "./Data/ResultCessiVegr2.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeAMOC xmax rate parameters ϵ γ state0 tspan prob t x y P T Q
-    lines!(ax1, parameters.nupl.F0 .+ parameters.nupl.rate .* t, Q; color = leadcolor)
-
+    @load "./Data/ResultCessiVegr3.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q; color = leadcolor)
+    println(r)
     xlims!(ax1, 1.1, 1.6)
 
-    ax1.ylabel = L"Q"
-    ax1.xlabel = L"F_0"
+    text!(ax1, 1.55, 4.6; text=L"r = 10^{-3}", align=[:right, :top], fontsize=7)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(gb[1, 2])
+    hideydecorations!(ax1)
+
+    ax3 = Axis(f[2, 2])
 
     contourf!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap = palette, levels = 2)
     contour!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels = [-1], color = :black, linewidth = 1)
 
     γcrit = findfirst(x -> x > -1, critCessiVeg)
 
-    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(xmax, parametersCessiVeg.vec, 0)
+    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
 
     ylims!(ax3, 0.0, 0.88)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
     ax3.ylabel = L"Coupling strength $\gamma$"
 
-    ax3_top = Axis(gb[1, 2];
+    text!(ax3, 0.017, 0.83; text=L"r = 10^{-3}", align=[:right, :top], fontsize=7)
+
+    hideydecorations!(ax3)
+
+    ax3_top = Axis(f[2, 2];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{AMOC tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [400, 200, 100, 50]
-    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeAMOC
+    tiptimeticks = [200, 100, 50]
+    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeCessi
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
     xlims!(ax3,     ϵrangeCessiVeg[1], ϵrangeCessiVeg[end])
@@ -953,15 +933,8 @@ begin
     # -------------------------------------------------------------------------
     # (c) Row 3
     # -------------------------------------------------------------------------
-    gc = f[3, 1] = GridLayout()
-    Label(gc[1, 1, TopLeft()], L"(\textit{c})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(gc[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 3]; xticks = [1.2, 1.4])
 
     iend = brCessi.specialpoint[3].idx
     sn1  = brCessi.specialpoint[1].idx
@@ -971,44 +944,103 @@ begin
     lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
 
-    @load "./Data/ResultCessiVegr0p5.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeAMOC xmax rate parameters ϵ γ state0 tspan prob t x y P T Q
-    lines!(ax1, parameters.nupl.F0 .+ parameters.nupl.rate .* t, Q; color = leadcolor)
-
+    @load "./Data/ResultCessiVegr2.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q; color = leadcolor)
+    println(r)
     xlims!(ax1, 1.1, 1.6)
 
-    ax1.ylabel = L"Q"
-    ax1.xlabel = L"F_0"
+    text!(ax1, 1.55, 4.6; text=L"r = 10^{-2}", align=[:right, :top], fontsize=7)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(gc[1, 2])
+    hideydecorations!(ax1)
+
+    ax3 = Axis(f[2, 3])
+    hideydecorations!(ax3)
 
     contourf!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap = palette, levels = 2)
     contour!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels = [-1], color = :black, linewidth = 1)
 
     γcrit = findfirst(x -> x > -1, critCessiVeg)
 
-    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(xmax, parametersCessiVeg.vec, 0)
+    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
 
     ylims!(ax3, 0.0, 0.88)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
-    ax3.ylabel = L"Coupling strength $\gamma$"
+    text!(ax3, 0.017, 0.83; text=L"r = 10^{-2}", align=[:right, :top], fontsize=7)
 
-    ax3_top = Axis(gc[1, 2];
+
+    ax3_top = Axis(f[2, 3];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{AMOC tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [400, 200, 100, 50]
-    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeAMOC
+    tiptimeticks = [200, 100, 50]
+    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeCessi
+    ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
+
+    xlims!(ax3,     ϵrangeCessiVeg[1], ϵrangeCessiVeg[end])
+    xlims!(ax3_top, ϵrangeCessiVeg[1], ϵrangeCessiVeg[end])
+
+    # -------------------------------------------------------------------------
+    # (c) Row 3
+    # -------------------------------------------------------------------------
+
+    ax1 = Axis(f[1, 4]; xticks = [1.2, 1.4])
+
+    iend = brCessi.specialpoint[3].idx
+    sn1  = brCessi.specialpoint[1].idx
+    sn2  = brCessi.specialpoint[2].idx
+
+    lines!(ax1, brCessi.branch.param[1:sn1],   brCessi.branch.Q[1:sn1];   color = :black)
+    lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
+    lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
+
+    @load "./Data/ResultCessiVegr1.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
+    lines!(ax1, parametersCessiVeg.nupl.F0 .+ parametersCessiVeg.nupl.r .* t, Q; color = leadcolor)
+    println(r)
+    xlims!(ax1, 1.1, 1.6)
+
+    text!(ax1, 1.55, 4.6; text=L"r = 10^{-1}", align=[:right, :top], fontsize=7)
+
+    hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
+    hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
+
+    hideydecorations!(ax1)
+
+    ax3 = Axis(f[2, 4])
+    hideydecorations!(ax3)
+
+    contourf!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, resultCessiVeg; colormap = palette, levels = 2)
+    contour!(ax3, ϵrangeCessiVeg, γrangeCessiVeg, critCessiVeg; levels = [-1], color = :black, linewidth = 1)
+
+    γcrit = findfirst(x -> x > -1, critCessiVeg)
+
+    band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
+    band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
+    band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
+
+    ylims!(ax3, 0.0, 0.88)
+
+    text!(ax3, 0.017, 0.83; text=L"r = 10^{-1}", align=[:right, :top], fontsize=7)
+
+
+    ax3_top = Axis(f[2, 4];
+        xaxisposition = :top,
+        yaxisposition = :right,
+    )
+
+    hideydecorations!(ax3_top, grid = false)
+    hidespines!(ax3_top, :l, :r, :b)
+
+    tiptimeticks = [200, 100, 50]
+    eps_ticks    = 1 ./ tiptimeticks * 1 / 180 * tiptimeCessi
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
     xlims!(ax3,     ϵrangeCessiVeg[1], ϵrangeCessiVeg[end])
@@ -1020,9 +1052,31 @@ begin
     colgap!(f.layout, 0.0)
     rowgap!(f.layout, 7.5)
 
-    colsize!(ga, 1, Relative(0.4))
-    colsize!(gb, 1, Relative(0.4))
-    colsize!(gc, 1, Relative(0.4))
+    # colsize!(ga, 1, Relative(0.4))
+    # colsize!(gb, 1, Relative(0.4))
+    # colsize!(gc, 1, Relative(0.4))
+
+    axdown = Axis(f[2,1:4], xlabelpadding = 17)
+    hidedecorations!(axdown, label=false)
+    hidespines!(axdown)
+
+    axdown.xlabel = L"\text{Timescale separation } \epsilon"
+
+    axdown_top = Axis(f[2, 1:4];
+        xaxisposition = :top,
+        yaxisposition = :right,
+        xlabel        = L"\text{AMOC tipping duration (years)}",
+        xlabelpadding = 17,
+    )
+
+    hidedecorations!(axdown_top, grid = false, label = false)
+    hidespines!(axdown_top, :l, :r, :b)
+
+    axup = Axis(f[1,1:4], xlabelpadding = 17)
+    hidedecorations!(axup, label=false)
+    hidespines!(axup)
+
+    axup.xlabel = L"F"
 
     f
 end
@@ -1035,9 +1089,11 @@ save("./Manuscript/Figures/FigS1.pdf", f, pt_per_unit=1)
 @load "./Data/brGIS.jld2"
 
 palette = cgrad([safecolor, unsafecolor], 2, categorical=true)
+CascAnalytics.c(statemax, parametersGISCessi.vec, tmax)
 
+parametersGISCessi.vec
 begin
-    size_inches = (5.3, 7.0)
+    size_inches = (5.3, 5.0)
     size_pt     = 72 .* size_inches
 
     f = Figure(size = size_pt, fontsize = 7, padding = 0)
@@ -1045,15 +1101,10 @@ begin
     # -------------------------------------------------------------------------
     # (a) Row 1
     # -------------------------------------------------------------------------
-    ga = f[1, 1] = GridLayout()
-    Label(ga[1, 1, TopLeft()], L"(\textit{a})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(ga[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 1]; xticks = [1.3, 1.7, 2.1])
+
+    println(ax1.limits)
 
     iend = brGIS.specialpoint[3].idx
     sn1  = brGIS.specialpoint[1].idx
@@ -1063,44 +1114,42 @@ begin
     lines!(ax1, brGIS.branch.param[sn1:sn2], brGIS.branch.V[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brGIS.branch.param[sn2:end], brGIS.branch.V[sn2:end]; color = :black)
 
-    @load "./Data/TrajGISCessieps1.0.jld2" rate parameters ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax1, 1.1 .+ parameters.nupl.rate .* t, V; color = :grey)
+    @load "./Data/ResultGISCessi.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax1, 1.1 .+ parametersGISCessi.nupl.r .* t, V; color = :grey)
 
     ax1.ylabel = L"V"
-    ax1.xlabel = L"T_f"
 
     xlims!(ax1, 1.1, 2.3)
+    ylims!(ax1, 0.0, 1.0)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(ga[1, 2])
+    text!(ax1, 2.2, 0.95; text=L"r = 10^{-4}", align=[:right, :top], fontsize=7)
 
-    @load "./Data/ResultGISCessi.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parameters xmax tiptimeGIS criteriumcorr tmax
+    ax3 = Axis(f[2, 1], ylabel = L"Coupling strength $\gamma$")
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
     contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
-    band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
+    band_y = parametersGISCessi.nupl.distance ./ (CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = nocolor)
 
     ylims!(ax3, 0, 10)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
-    ax3.ylabel = L"Coupling strength $\gamma$"
+    text!(ax3, 2.7, 9.5; text=L"r = 10^{-4}", align=[:right, :top], fontsize=7)
 
-    ax3_top = Axis(ga[1, 2];
+    ax3_top = Axis(f[2, 1];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{GIS tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [8000, 4000, 2000, 1000]
+    tiptimeticks = [4000, 2000, 1000]
     eps_ticks    = 1 ./ tiptimeticks * 180 / 470 * tiptimeGIS
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
@@ -1110,15 +1159,8 @@ begin
     # -------------------------------------------------------------------------
     # (b) Row 2
     # -------------------------------------------------------------------------
-    gb = f[2, 1] = GridLayout()
-    Label(gb[1, 1, TopLeft()], L"(\textit{b})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(gb[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 2]; xticks = [1.3, 1.7, 2.1])
 
     iend = brGIS.specialpoint[3].idx
     sn1  = brGIS.specialpoint[1].idx
@@ -1128,42 +1170,46 @@ begin
     lines!(ax1, brGIS.branch.param[sn1:sn2], brGIS.branch.V[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brGIS.branch.param[sn2:end], brGIS.branch.V[sn2:end]; color = :black)
 
-    @load "./Data/ResultGISCessir3.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parameters xmax tiptimeGIS criteriumcorr tmax rate ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax1, 1.1 .+ parameters.nupl.rate .* t, V; color = :grey)
+    @load "./Data/ResultGISCessir3.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax1, 1.1 .+ parametersGISCessi.nupl.r .* t, V; color = :grey)
 
     ax1.ylabel = L"V"
-    ax1.xlabel = L"T_f"
 
     xlims!(ax1, 1.1, 2.3)
+    ylims!(ax1, 0.0, 1.0)
+
+    hideydecorations!(ax1)
+
+    text!(ax1, 2.2, 0.95; text=L"r = 10^{-3}", align=[:right, :top], fontsize=7)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(gb[1, 2])
+    ax3 = Axis(f[2, 2])
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
     contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
-    band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
+    band_y = parametersGISCessi.nupl.distance ./ (CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = nocolor)
 
     ylims!(ax3, 0, 10)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
-    ax3.ylabel = L"Coupling strength $\gamma$"
+    hideydecorations!(ax3, grid = false)
 
-    ax3_top = Axis(gb[1, 2];
+    text!(ax3, 2.7, 9.5; text=L"r = 10^{-3}", align=[:right, :top], fontsize=7)
+
+    ax3_top = Axis(f[2, 2];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{GIS tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [8000, 4000, 2000, 1000]
+    tiptimeticks = [4000, 2000, 1000]
     eps_ticks    = 1 ./ tiptimeticks * 180 / 470 * tiptimeGIS
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
@@ -1173,15 +1219,8 @@ begin
     # -------------------------------------------------------------------------
     # (c) Row 3
     # -------------------------------------------------------------------------
-    gc = f[3, 1] = GridLayout()
-    Label(gc[1, 1, TopLeft()], L"(\textit{c})";
-        fontsize = 9,
-        font     = :bold,
-        padding  = (0, 5, 5, 0),
-        halign   = :right
-    )
 
-    ax1 = Axis(gc[1, 1]; xticks = [1.2, 1.4])
+    ax1 = Axis(f[1, 3]; xticks = [1.3, 1.7, 2.1])
 
     iend = brGIS.specialpoint[3].idx
     sn1  = brGIS.specialpoint[1].idx
@@ -1191,42 +1230,46 @@ begin
     lines!(ax1, brGIS.branch.param[sn1:sn2], brGIS.branch.V[sn1:sn2]; color = :black, linestyle = :dash)
     lines!(ax1, brGIS.branch.param[sn2:end], brGIS.branch.V[sn2:end]; color = :black)
 
-    @load "./Data/ResultGISCessir2.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parameters xmax tiptimeGIS criteriumcorr tmax rate ϵ γ state0 tspan prob t V x y Q flux
-    lines!(ax1, 1.1 .+ parameters.nupl.rate .* t, V; color = :grey)
+    @load "./Data/ResultGISCessir2.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax1, 1.1 .+ parametersGISCessi.nupl.r .* t, V; color = :grey)
 
     ax1.ylabel = L"V"
-    ax1.xlabel = L"T_f"
 
     xlims!(ax1, 1.1, 2.3)
+    ylims!(ax1, 0.0, 1.0)
+
+    hideydecorations!(ax1)
+
+    text!(ax1, 2.2, 0.95; text=L"r = 10^{-2}", align=[:right, :top], fontsize=7)
 
     hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(gc[1, 2])
+    ax3 = Axis(f[2, 3])
 
     contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
     contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
-    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, criteriumcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
-    band_y = parameters.nupl.distance ./ (CascAnalytics.c(xmax, parameters.vec, tmax) .* ϵrangeGISCessi)
+    band_y = parametersGISCessi.nupl.distance ./ (CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
     band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = nocolor)
 
     ylims!(ax3, 0, 10)
 
-    ax3.xlabel = L"Timescale separation $\epsilon$"
-    ax3.ylabel = L"Coupling strength $\gamma$"
+    hideydecorations!(ax3, grid = false)
 
-    ax3_top = Axis(gc[1, 2];
+    text!(ax3, 2.7, 9.5; text=L"r = 10^{-2}", align=[:right, :top], fontsize=7)
+
+    ax3_top = Axis(f[2, 3];
         xaxisposition = :top,
         yaxisposition = :right,
-        xlabel        = L"\text{GIS tipping duration (years)}",
     )
 
     hideydecorations!(ax3_top, grid = false)
     hidespines!(ax3_top, :l, :r, :b)
 
-    tiptimeticks = [8000, 4000, 2000, 1000]
+    tiptimeticks = [2000, 1000]
     eps_ticks    = 1 ./ tiptimeticks * 180 / 470 * tiptimeGIS
     ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
 
@@ -1234,14 +1277,96 @@ begin
     xlims!(ax3_top, ϵrangeGISCessi[1], ϵrangeGISCessi[end])
 
     # -------------------------------------------------------------------------
-    # Layout tweaks (keep behavior)
+    # (c) Row 3
+    # -------------------------------------------------------------------------
+
+    ax1 = Axis(f[1, 4]; xticks = [1.3, 1.7, 2.1])
+
+    iend = brGIS.specialpoint[3].idx
+    sn1  = brGIS.specialpoint[1].idx
+    sn2  = brGIS.specialpoint[2].idx
+
+    lines!(ax1, brGIS.branch.param[1:sn1],   brGIS.branch.V[1:sn1];   color = :black)
+    lines!(ax1, brGIS.branch.param[sn1:sn2], brGIS.branch.V[sn1:sn2]; color = :black, linestyle = :dash)
+    lines!(ax1, brGIS.branch.param[sn2:end], brGIS.branch.V[sn2:end]; color = :black)
+
+    @load "./Data/ResultGISCessir1.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+    lines!(ax1, 1.1 .+ parametersGISCessi.nupl.r .* t, V; color = :grey)
+
+    ax1.ylabel = L"V"
+
+    xlims!(ax1, 1.1, 2.3)
+    ylims!(ax1, 0.0, 1.0)
+
+    hideydecorations!(ax1)
+
+    text!(ax1, 2.2, 0.95; text=L"r = 10^{-1}", align=[:right, :top], fontsize=7)
+
+    hideydecorations!(ax1, ticks = false, ticklabels = false, label = false)
+    hidexdecorations!(ax1, ticks = false, ticklabels = false, label = false)
+
+    ax3 = Axis(f[2, 4])
+
+    contourf!(ax3, ϵrangeGISCessi, γrangeGISCessi, resultGISCessi; colormap = palette)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critGISCessi;     levels = [1], color = :black, linewidth = 1)
+    contour!(ax3, ϵrangeGISCessi, γrangeGISCessi, critcorr;    levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+
+    band_y = parametersGISCessi.nupl.distance ./ (CascAnalytics.c(statemax, parametersGISCessi.vec, tmax) .* ϵrangeGISCessi)
+    band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = :white)
+    band!(ax3, ϵrangeGISCessi, zeros(length(ϵrangeGISCessi)), band_y; color = nocolor)
+
+    ylims!(ax3, 0, 10)
+
+    hideydecorations!(ax3, grid = false)
+
+    text!(ax3, 2.7, 9.5; text=L"r = 10^{-1}", align=[:right, :top], fontsize=7)
+
+    ax3_top = Axis(f[2, 4];
+        xaxisposition = :top,
+        yaxisposition = :right,
+    )
+
+    hideydecorations!(ax3_top, grid = false)
+    hidespines!(ax3_top, :l, :r, :b)
+
+    tiptimeticks = [2000, 1000]
+    eps_ticks    = 1 ./ tiptimeticks * 180 / 470 * tiptimeGIS
+    ax3_top.xticks = (eps_ticks, string.(tiptimeticks))
+
+    xlims!(ax3,     ϵrangeGISCessi[1], ϵrangeGISCessi[end])
+    xlims!(ax3_top, ϵrangeGISCessi[1], ϵrangeGISCessi[end])
+
+    # -------------------------------------------------------------------------
+    # Layout tweaks 
     # -------------------------------------------------------------------------
     colgap!(f.layout, 0.0)
     rowgap!(f.layout, 7.5)
 
-    colsize!(ga, 1, Relative(0.4))
-    colsize!(gb, 1, Relative(0.4))
-    colsize!(gc, 1, Relative(0.4))
+    # colsize!(ga, 1, Relative(0.4))
+    # colsize!(gb, 1, Relative(0.4))
+    # colsize!(gc, 1, Relative(0.4))
+
+    axdown = Axis(f[2,1:4], xlabelpadding = 17)
+    hidedecorations!(axdown, label=false)
+    hidespines!(axdown)
+
+    axdown.xlabel = L"\text{Timescale separation } \epsilon"
+
+    axdown_top = Axis(f[2, 1:4];
+        xaxisposition = :top,
+        yaxisposition = :right,
+        xlabel        = L"\text{GIS tipping duration (years)}",
+        xlabelpadding = 17,
+    )
+
+    hidedecorations!(axdown_top, grid = false, label = false)
+    hidespines!(axdown_top, :l, :r, :b)
+
+    axup = Axis(f[1,1:4], xlabelpadding = 17)
+    hidedecorations!(axup, label=false)
+    hidespines!(axup)
+
+    axup.xlabel = L"\delta T"
 
     f
 end

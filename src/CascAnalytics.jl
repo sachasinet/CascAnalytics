@@ -6,16 +6,9 @@
 #   Module containing functions used in main.jl.
 #
 # Author(s):   Sacha Sinet (s.a.m.sinet@uu.nl)
-# Affiliation: Institution for Marine and Atmospheric research Utrecht (IMAU)
-#
-# Created:     YYYY-MM-DD
-# Last updated: YYYY-MM-DD
+# Affiliation: Institute for Marine and Atmospheric research Utrecht (IMAU)
 #
 # License:     MIT License (see LICENSE file)
-#
-# Reference:
-#   Author et al. (YEAR), Title, Journal, DOI
-#   OR arXiv:XXXX.XXXXX
 #
 # ==============================================================================
 
@@ -32,14 +25,14 @@ function c(state, pvec, t) #coupling functions used for each models
         x, y = state
         explabel, a, b, μ0, r, distance, j, ϵ, γ = pvec
 
-        der = -(3 * x - x^3 - μ0 - r * t) # careful if you use a rate, then 2 is not really the position
+        der = (3 * x - x^3 + μ0 + r * t) # careful if you use a rate, then 2 is not really the position
         return der
 
     elseif explabel == 2
         x, y = state
         explabel, a, b, μ0, r, distance, j, ϵ, γ = pvec
 
-        coup = 0.2 * (cos((2 * π) / 7 * x + (15 * π) / 14))^2
+        coup = 1/5 * (cos(π/14 - 2π/7*x))^2
 
         return coup
 
@@ -111,7 +104,7 @@ function δ11c(statemax, pnupl, tmax) #Hessian functions used for each models
         δ11c = hcat(-(-6 * x))
     elseif explabel == 2
         x, y = statemax
-        δ11c = hcat(-8 / 245 * π^2 * cos(1 / 7 * (π + 4 * π * x)))
+        δ11c = hcat(8/245*π^2*cos(2/7*π*(2*x+3)))
     elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
@@ -133,7 +126,7 @@ function δ1c(statemax, pnupl, tmax) #Gradient functions used for each models
         δ1c = [-(3 - 3 * x^2),]
     elseif explabel == 2
         x, y = statemax
-        δ1c = [-2 / 35 * π * sin(1 / 7 * (π + 4 * π * x)),]
+        δ1c = [2/35*π*sin(2/7*π*(2*x+3)),]
     elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
@@ -153,7 +146,7 @@ function f(statemax, pnupl, tmax) #R.H.S for each models
     if explabel == 1 || explabel == 2
         x, y = statemax
         @unpack explabel, a, b, μ0, r, distance, j = pnupl
-        return [(3 * x - x^3 - μ0 - r * tmax),]
+        return [(3 * x - x^3 + μ0 + r * tmax),]
 
     elseif explabel == 3
         x, y = statemax
@@ -175,10 +168,10 @@ function δ2f(statemax, pnupl, tmax) #Derivative of the R.H.S. w.r.t. the slow t
     @unpack explabel, = pnupl
     if explabel == 1
         @unpack explabel, a, b, μ0, r, distance, j = pnupl
-        δ2f = [-r,]
+        δ2f = [r,]
     elseif explabel == 2
         @unpack explabel, a, b, μ0, r, distance, j = pnupl
-        δ2f = [-r,]
+        δ2f = [r,]
     elseif explabel == 3
         x, y = statemax
         @unpack α, μcar, tdiff, F0, r = pnupl
@@ -299,14 +292,14 @@ function FGeneric!(dstate, state, pvec, t)
     x, y = state
     explabel, a, b, μ0, r, distance, j, ϵ, γ = pvec
 
-    dstate[1] = 3 * x - x^3 - μ0 - r * t
-    dstate[2] = (-a * y^2 + b - γ * ϵ^j * CascAnalytics.c(state, pvec, t)) * 1 / ϵ
+    dstate[1] = 3 * x - x^3 + μ0 + r * t
+    dstate[2] = (a * y^2 - b + γ * ϵ^j * CascAnalytics.c(state, pvec, t)) * 1 / ϵ
 
     return nothing
 end
 
 function tipevent(u, t, integrator)
-    return (u[2] < -0.5)
+    return (u[2] > 0.5)
 end
 
 function affecttip!(integrator)

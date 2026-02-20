@@ -4,20 +4,11 @@
 #
 # Description:
 #   Numerical methods used to produce the data of the article.
-#   Note that, for numerical efficiency, all computations are performed 
-#   in terms of the slow time ϵt.
 #
 # Author(s):   Sacha Sinet (s.a.m.sinet@uu.nl)
-# Affiliation: Institution for Marine and Atmospheric research Utrecht (IMAU)
-#
-# Created:     YYYY-MM-DD
-# Last updated: YYYY-MM-DD
+# Affiliation: Institute for Marine and Atmospheric research Utrecht (IMAU)
 #
 # License:     MIT License (see LICENSE file)
-#
-# Reference:
-#   Author et al. (YEAR), Title, Journal, DOI
-#   OR arXiv:XXXX.XXXXX
 #
 # ==============================================================================
 
@@ -43,6 +34,8 @@ using JLD2
 @load "./Data/brVeg.jld2"
 @load "./Data/brGIS.jld2"
 
+brCessi.specialpoint
+
 #define colors
 darkgreen = colorant"#117733";
 lightblue = colorant"#6699CC";
@@ -62,14 +55,14 @@ palette = cgrad([lightred, lightyellow], 2, categorical=true);
 
 #region Generic derivative
 #We run one trajectory, to compute tmax and statemax (in terms of the slow time ϵt)
-r = 0.001
+r = 0.1
 parametersDer = CascAnalytics.parametersGeneric(explabel=1, r=r, μ0= 9 / 8)
 
 ϵ = 0.05
 γ = 0.8
 append!(parametersDer.vec, ϵ, γ)
 
-state0 = [1.5, sqrt(parametersDer.nupl.b / parametersDer.nupl.a)]
+state0 = [-1.5, -sqrt(parametersDer.nupl.b / parametersDer.nupl.a)]
 tspan = (0, 4 / r)
 
 prob = ODEProblem(CascAnalytics.FGeneric!, state0, tspan, parametersDer.vec)
@@ -78,7 +71,7 @@ prob = ODEProblem(CascAnalytics.FGeneric!, state0, tspan, parametersDer.vec)
 t = trajectory.t
 x = Matrix(trajectory)[1, :]
 y = Matrix(trajectory)[2, :]
-coupling = @. -(3 * x - x^3 - parametersDer.nupl.μ0 .- parametersDer.nupl.r .* t)
+coupling = @. (3 * x - x^3 + parametersDer.nupl.μ0 .+ parametersDer.nupl.r .* t)
 
 begin
     f = Figure()
@@ -90,27 +83,27 @@ begin
     ax1.ylabel = L"x"
 
     ax2 = Axis(f[1, 2], limits=(0, nothing, -1.0, 1.0))
-    lines!(ax2, t, ϵ .* coupling; color=:red)
+    lines!(ax2, t/ϵ, ϵ .* coupling; color=:red)
     ax2.title = L"\text{Forcing}"
-    ax2.xlabel = L"\text{time}"
+    ax2.xlabel = L"\text{fast time}"
     ax2.ylabel = L"\dot{x}"
 
     Label(f[2, 1:2], L"\text{Following system trajectory for different coupling}")
 
     ax3 = Axis(f[3, 1], limits=(0.0, 0.3, -0.5, 0.5))
-    lines!(ax3, brsn.branch.param, brsn.branch.x; color=:grey)
+    # lines!(ax3, brsn.branch.param, -1 .* brsn.branch.x; color=:grey)
     la = lines!(ax3, γ .* coupling .* ϵ, y)
     ax3.xlabel = L"\gamma \dot{x}"
     ax3.ylabel = L"y"
 
     ax4 = Axis(f[3, 2], limits=(0, nothing, -0.5, 0.5))
-    lines!(ax4, t, y)
-    ax4.xlabel = L"\text{time}"
+    lines!(ax4, t/ϵ , y)
+    ax4.xlabel = L"\text{fast time}"
     ax4.ylabel = L"y"
 end
 f
 
-# @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
+# @save "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
 
 idmax = findmax(coupling)[2]
 statemax = [x[idmax], y[idmax]] #system at tmax
@@ -143,11 +136,11 @@ F = a0 * sqrt(2 * κ)
 
 eig1 = zeros(Float64, length(brsn.branch.param))
 d = zeros(Float64, length(brsn.branch.param))
-for i ∈ 1:(brsn.specialpoint[2].idx-1)
+for i ∈ 1:(brsn.specialpoint[1].idx-1)
     eig1[i] = real(brsn.eig[i].eigenvals[1])
-    d[i] = (brsn.eig[i].eigenvals[1] .* brsn.eig[i].eigenvals[1]) / (brsn.specialpoint[2].param - brsn.branch.param[i])
+    d[i] = (brsn.eig[i].eigenvals[1] .* brsn.eig[i].eigenvals[1]) / (brsn.specialpoint[1].param - brsn.branch.param[i])
 end
-coef = sqrt(d[brsn.specialpoint[1].idx-1] / 2) #Why not a nimus here?
+coef = sqrt(d[brsn.specialpoint[1].idx-1] / 2)
 
 
 #we compute the criterium
@@ -181,7 +174,7 @@ end
 fig
 
 @save "./Data/ResultDerGen.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
-@save "./Data/ResultDerGenr0p001.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
+@save "./Data/ResultDerGenr1p0.jld2" resultDer ϵrangeDer γrangeDer critDer parametersDer r critcorr statemax tmax
 #endregion
 
 #region Generic nonlinear
@@ -193,7 +186,7 @@ parametersNonl = CascAnalytics.parametersGeneric(explabel=2, r=r, μ0=9 / 8)
 γ = 0.8
 append!(parametersNonl.vec, ϵ, γ)
 
-state0 = [1.5, sqrt(parametersNonl.nupl.b / parametersNonl.nupl.a)]
+state0 = [-1.5, -sqrt(parametersNonl.nupl.b / parametersNonl.nupl.a)]
 tspan = (0, 4 / r)
 
 prob = ODEProblem(CascAnalytics.FGeneric!, state0, tspan, parametersNonl.vec)
@@ -202,7 +195,7 @@ prob = ODEProblem(CascAnalytics.FGeneric!, state0, tspan, parametersNonl.vec)
 t = trajectory.t
 x = Matrix(trajectory)[1, :]
 y = Matrix(trajectory)[2, :]
-coupling = @. 0.2 * (cos((2 * π) / 7 * x + (15 * π) / 14))^2
+coupling = @. 1/5 * (cos(13π/14 + 2π/7*x))^2
 
 begin
     f = Figure()
@@ -214,9 +207,9 @@ begin
     ax1.ylabel = L"x"
 
     ax2 = Axis(f[1, 2], limits=(0, nothing, -1.0, 1.0))
-    lines!(ax2, t, coupling; color=:red)
+    lines!(ax2, t/ϵ , coupling; color=:red)
     ax2.title = L"\text{Forcing}"
-    ax2.xlabel = L"\text{time}"
+    ax2.xlabel = L"\text{fast time}"
     ax2.ylabel = L"\dot{x}"
 
     Label(f[2, 1:2], L"\text{Following system trajectory for different coupling}")
@@ -228,8 +221,8 @@ begin
     ax3.ylabel = L"y"
 
     ax4 = Axis(f[3, 2], limits=(0, nothing, -0.5, 0.5))
-    lines!(ax4, t, y)
-    ax4.xlabel = L"\text{time}"
+    lines!(ax4, t/ϵ , y)
+    ax4.xlabel = L"\text{fast time}"
     ax4.ylabel = L"y"
 end
 f
@@ -376,11 +369,11 @@ end
 F = sqrt(-d[brVeg.specialpoint[1].idx-1] / 2)
 CascAnalytics.S(statemax, parametersCessiVeg.nupl, tmax)
 
-
+brVeg.specialpoint
 #we compute the criterium
 critCessiVeg = CascAnalytics.criterium(ϵrangeCessiVeg, γrangeCessiVeg, parametersCessiVeg, statemax, F; tmax=tmax)
 
-@save "./Data/ResultCessiVegr1.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
+@save "./Data/ResultCessiVeg.jld2" resultCessiVeg ϵrangeCessiVeg γrangeCessiVeg critCessiVeg parametersCessiVeg tiptimeCessi statemax r ϵ γ state0 tspan prob t x y P T Q
 
 begin
     fig = Figure()
@@ -413,7 +406,7 @@ fig
 
 #region GISCessi 
 #We run one trajectory, to compute tmax and statemax (in terms of the slow time ϵt)
-r = 1e-4;
+r = 1e-1;
 parametersGISCessi = CascAnalytics.parametersGISCessi(r=r, Q0 = brCessi.branch.Q[1], Tf = 1.1, distance=brCessi.specialpoint[1].param - brCessi.param[1]);
 
 ϵ = parametersGISCessi.nupl.tdiff/parametersGISCessi.nupl.tmelt;
@@ -451,6 +444,8 @@ begin
 end
 fig
 
+brGIS.specialpoint
+
 # @save "./Data/TrajGISCessieps1.6.jld2" r parametersGISCessi ϵ γ state0 tspan prob t V x y Q flux
 
 idmax = findmax(flux)[2]
@@ -464,7 +459,7 @@ undertresholdid = findfirst(x -> x > threshold, reverse(flux./maximum(flux)));
 tiptimeGIS = (t[end - undertresholdid + 1] - t[overthresholdid])*470
 
 #Map
-ϵrangeGISCessi = range(0.001, 3.1, 400) #normally 1 ./1000 * 180/470 * tiptimeGIS = 3.052716098349083
+ϵrangeGISCessi = range(0.001, 3.3, 400) #normally 1 ./1000 * 180/470 * tiptimeGIS = 3.052716098349083
 γrangeGISCessi = range(0.01, 15.0, 400)
 
 param_list = [(p1, p2) for p1 in ϵrangeGISCessi, p2 in γrangeGISCessi]
@@ -545,7 +540,7 @@ begin
 end
 fig
 
-# @save "./Data/ResultGISCessir1.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
+@save "./Data/ResultGISCessir1.jld2" resultGISCessi ϵrangeGISCessi γrangeGISCessi critGISCessi parametersGISCessi statemax tiptimeGIS critcorr tmax r ϵ γ state0 tspan prob t V x y Q flux
 
 #we compute the range of safe overshoot for the reference γ
 γrangeGISCessi[101] #where the physical coupling is more or Less

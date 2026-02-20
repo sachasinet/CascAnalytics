@@ -6,16 +6,9 @@
 #   Script producing all figures of the article.
 #
 # Author(s):   Sacha Sinet (s.a.m.sinet@uu.nl)
-# Affiliation: Institution for Marine and Atmospheric research Utrecht (IMAU)
-#
-# Created:     YYYY-MM-DD
-# Last updated: YYYY-MM-DD
+# Affiliation: Institutie for Marine and Atmospheric research Utrecht (IMAU)
 #
 # License:     MIT License (see LICENSE file)
-#
-# Reference:
-#   Author et al. (YEAR), Title, Journal, DOI
-#   OR arXiv:XXXX.XXXXX
 #
 # ==============================================================================
 
@@ -53,7 +46,7 @@ bluepalette = cgrad([:blue, :white], 100, categorical=true);
 nocolor = ColorSchemes.seaborn_colorblind[10];
 safecolor = ColorSchemes.seaborn_colorblind[3];
 unsafecolor = ColorSchemes.seaborn_colorblind[2];
-CessiVegcolor = ColorSchemes.seaborn_colorblind[4];
+dercolor = ColorSchemes.seaborn_colorblind[4];
 nonlcolor = ColorSchemes.seaborn_colorblind[1];
 leadcolor = ColorSchemes.seaborn_colorblind[8];
 #endregion
@@ -75,7 +68,7 @@ function addaxLabel(ax, label, offset; color=:black)
 end
 
 begin
-    size_inches = (5.0, 5.0)
+    size_inches = (5.3, 5.0)
     size_pt = 72 .* size_inches
 
     f  = Figure(size = size_pt, fontsize = 7, padding = 0)
@@ -110,16 +103,16 @@ begin
 
     # c2(x)
     @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
-    lines!(ax2a, t/ϵ, ϵ .* coupling; color = CessiVegcolor)
+    lines!(ax2a, t/ϵ, ϵ .* coupling; color = dercolor)
 
     hidexdecorations!(ax2a)
     hideydecorations!(ax2a, ticks = false, ticklabels = false, label = false)
     addaxLabel(ax2a, L"\text{Coupling functions}", [0.02, 0.07])
-    addaxLabel(ax2a, L"c_2(x)", [0.67, 0.5]; color = CessiVegcolor)
+    addaxLabel(ax2a, L"c_2(x)", [0.67, 0.5]; color = dercolor)
     addaxLabel(ax2a, L"c_1(x)", [0.41, 0.5]; color = nonlcolor)
 
     # --- Axes: fast subsystem, y2 (via c2) -----------------------------------
-    ax3 = Axis(ga[4, 1], limits = (0, 20/ϵ, -0.3, 0.6))
+    ax3 = Axis(ga[4, 1], limits = (0, 20/ϵ, -0.6, 0.3))
 
     @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
     lines!(ax3, t/ϵ, y; color = nocolor)
@@ -135,10 +128,12 @@ begin
     hideydecorations!(ax3, ticks = false, ticklabels = false, label = false)
     addaxLabel(ax3, L"Coupling via $c_2(x)$", [0.02, 0.07])
 
+    ax3.xlabel = L"t"
+
     println(t[end])
 
     # --- Axes: fast subsystem, y1 (via c1) -----------------------------------
-    ax4 = Axis(ga[3, 1], limits = (0, 20/ϵ, -0.3, 0.6))
+    ax4 = Axis(ga[3, 1], limits = (0, 20/ϵ, -0.6, 0.3))
 
     @load "./Data/trajNonl0p8.jld2" t x y coupling parametersNonl
     lines!(ax4, t/ϵ, y; color = nocolor)
@@ -181,17 +176,17 @@ begin
         xticks = [0,1.5,2,2.5]
     )
 
-    ibegin = brScurve.specialpoint[1].idx
-    ibif1  = brScurve.specialpoint[2].idx
-    ibif2  = brScurve.specialpoint[3].idx
-    iend   = brScurve.specialpoint[4].idx
+    ibegin = 1
+    ibif1  = brScurve.specialpoint[1].idx
+    ibif2  = brScurve.specialpoint[2].idx
+    iend   = brScurve.specialpoint[3].idx
 
     lines!(ax1, brScurve.branch.param[ibegin:ibif1], brScurve.branch.x[ibegin:ibif1]; color = :black)
     lines!(ax1, brScurve.branch.param[ibif1:ibif2],  brScurve.branch.x[ibif1:ibif2];  color = :black, linestyle = :dash)
     lines!(ax1, brScurve.branch.param[ibif2:iend],   brScurve.branch.x[ibif2:iend];   color = :black)
 
     @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
-    lines!(ax1, parametersDer.nupl.μ .+ parametersDer.nupl.r .* t, x; color = leadcolor)
+    lines!(ax1, parametersDer.nupl.μ0 .+ parametersDer.nupl.r .* t, x; color = leadcolor)
 
     ax1.title  = "Slow subsystem"
     ax1.xlabel = L"\mu"
@@ -209,13 +204,13 @@ begin
         halign   = :right
     )
 
-    ibegin = brsn.specialpoint[1].idx
-    ibif   = brsn.specialpoint[2].idx
-    iend   = brsn.specialpoint[3].idx
+    ibegin = 1
+    ibif   = brsn.specialpoint[1].idx
+    iend   = brsn.specialpoint[2].idx
 
-    ax2 = Axis(gc[1, 1], limits = (0.0, 0.4, -0.4, 0.75), yticks = [0.0, 0.5], xticks = [0.1, 0.3])
-    lines!(ax2, brsn.branch.param[ibegin:ibif], brsn.branch.x[ibegin:ibif]; color = :black)
-    lines!(ax2, brsn.branch.param[ibif:iend],   brsn.branch.x[ibif:iend];   color = :black, linestyle = :dash)
+    ax2 = Axis(gc[1, 1], limits = (0.0, 0.3, -0.4, 0.4), yticks = [0.0, 0.5], xticks = [0.1, 0.2])
+    lines!(ax2, brsn.branch.param[ibegin:ibif], brsn.branch.x[ibegin:ibif]; color = :black, linestyle = :dash)
+    lines!(ax2, brsn.branch.param[ibif:iend],   brsn.branch.x[ibif:iend];   color = :black)
     text!(ax2, -0.68, 1.85;
         text    = L"Coupling via $c_1(x)$",
         align   = [:left, :center],
@@ -237,9 +232,9 @@ begin
     hideydecorations!(ax2, ticks = false, ticklabels = false, label = false)
     hidexdecorations!(ax2, ticks = false, ticklabels = false, label = false)
 
-    ax3 = Axis(gc[1, 2], limits = (0.0, 0.4, -0.4, 0.75), yticks = [0.0, 0.5], xticks = [0.1, 0.3])
-    lines!(ax3, brsn.branch.param[ibegin:ibif], brsn.branch.x[ibegin:ibif]; color = :black)
-    lines!(ax3, brsn.branch.param[ibif:iend],   brsn.branch.x[ibif:iend];   color = :black, linestyle = :dash)
+    ax3 = Axis(gc[1, 2], limits = (0.0, 0.3, -0.4, 0.4), yticks = [0.0, 0.5], xticks = [0.1, 0.2])
+    lines!(ax3, brsn.branch.param[ibegin:ibif], brsn.branch.x[ibegin:ibif]; color = :black, linestyle = :dash)
+    lines!(ax3, brsn.branch.param[ibif:iend],   brsn.branch.x[ibif:iend];   color = :black)
 
     @load "./Data/trajDer0p8.jld2" t x y coupling parametersDer ϵ γ
     la = lines!(ax3, 0.8 * ϵ .* coupling, y; color = nocolor)
@@ -338,7 +333,7 @@ begin
 
     contourf!(ax, ϵrangeDer, γrangeDer, resultDer; colormap = palette, levels = 2)
     contour!(ax, ϵrangeDer, γrangeDer, critDer;        levels = [1], color = :black, linewidth = 1)
-    contour!(ax, ϵrangeDer, γrangeDer, critcorr;  levels = [1], color = :black, linewidth = 1, linestyle = :dash)
+    # contour!(ax, ϵrangeDer, γrangeDer, critcorr;  levels = [1], color = :black, linewidth = 1, linestyle = :dash)
 
     band_y = parametersDer.nupl.distance ./ (CascAnalytics.c(statemax, parametersDer.vec, tmax) .* ϵrangeDer)
     band!(ax, ϵrangeDer, zeros(length(ϵrangeDer)), band_y; color = :white)
@@ -558,6 +553,7 @@ begin
     γcrit = findfirst(x -> x > -1, critCessiVeg)
 
     band_y = parametersCessiVeg.nupl.distance / CascAnalytics.c(statemax, parametersCessiVeg.vec, 0)
+    println(band_y)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = :white)
     band!(ax3, ϵrangeCessiVeg, zeros(length(ϵrangeCessiVeg)), band_y; color = nocolor)
 
@@ -603,7 +599,7 @@ begin
     f
 end
 
-save("./Manuscript/Figures/Fig4.pdf", f, pt_per_unit=1)
+save("./Manuscript/Figures/Fig4.pdf", f, px_per_unit=1)
 #endregion
 
 #region Fig5
@@ -758,7 +754,7 @@ begin
 
     ylims!(ax3, 0, 10)
 
-    scatter!(ax3, 2.2, 3.8; marker = :star5, strokewidth = 1, markersize = 7, color = unsafecolor)
+    scatter!(ax3, 2.4, 3.8; marker = :star5, strokewidth = 1, markersize = 7, color = unsafecolor)
     scatter!(ax3, 1.6, 3.8; marker = :star5, strokewidth = 1, markersize = 7, color = safecolor)
     scatter!(ax3, 1.0, 3.8; marker = :star5, strokewidth = 1, markersize = 7, color = nocolor)
 

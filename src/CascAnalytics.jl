@@ -255,7 +255,7 @@ end
 #endregion
 
 #region Functions for Generic system
-struct parametersGeneric
+struct parametersGeneric #Parameters for the generic system, with default values.
     vec::Vector
     nupl::NamedTuple
 
@@ -288,7 +288,7 @@ struct parametersGeneric
     end
 end
 
-function FGeneric!(dstate, state, pvec, t)
+function FGeneric!(dstate, state, pvec, t) #R.H.S for the generic system
     x, y = state
     explabel, a, b, μ0, r, distance, j, ϵ, γ = pvec
 
@@ -298,11 +298,11 @@ function FGeneric!(dstate, state, pvec, t)
     return nothing
 end
 
-function tipevent(u, t, integrator)
+function tipevent(u, t, integrator) #Event function for tipping in the generic system
     return (u[2] > 0.5)
 end
 
-function affecttip!(integrator)
+function affecttip!(integrator)#Affect function for tipping in the generic system
     terminate!(integrator)
 end
 
@@ -313,7 +313,7 @@ cbs = CallbackSet(cb1, tippingcallback)
 #endregion
 
 #region Functions for CessiVeg
-struct parametersCessiVeg
+struct parametersCessiVeg#Parameters for the Cessi-Veg system, with default values.
     vec::Vector
     nupl::NamedTuple
 
@@ -374,7 +374,7 @@ struct parametersCessiVeg
     end
 end
 
-function FCessiVeg!(dstate, state, pvec, t)
+function FCessiVeg!(dstate, state, pvec, t)#R.H.S for the Cessi-Veg system
     x, y, P, T = state
     explabel, α, μcar, tdiff, F0, Q0, r, rP, Pd, b, K, hP, rm, mA, hA, mf, hf, β, P0, T0, distance, j, ϵ, γ = pvec
 
@@ -389,14 +389,14 @@ function FCessiVeg!(dstate, state, pvec, t)
     return nothing
 end
 
-function tipeventCessiVeg(u, t, integrator)
+function tipeventCessiVeg(u, t, integrator)#Event function for tipping in the Cessi-Veg system
     return (u[4] < 0.6)
 end
-tippingcallbackCessiVeg = DiscreteCallback(tipeventCessiVeg, stopsimulation!; save_positions=(false, false))
+tippingcallbackCessiVeg = DiscreteCallback(tipeventCessiVeg, stopsimulation!; save_positions=(false, false))#Callback for tipping in the Cessi-Veg system
 #endregion
 
 #region Functions for GISCessi
-struct parametersGISCessi
+struct parametersGISCessi#Parameters for the GISCessi system, with default values.
     vec::Vector
     nupl::NamedTuple
 
@@ -451,7 +451,7 @@ struct parametersGISCessi
     end
 end
 
-function FGISCessi!(dstate, state, pvec, t)
+function FGISCessi!(dstate, state, pvec, t)#R.H.S for the GISCessi system
     V, x, y = state
     explabel, α, μcar, tdiff, F0, Q0, Tf, Tp, Tm, Vp, Vm, tmelt, alead, blead, clead, dlead,  r, distance, j, ϵ, γ = pvec
 
@@ -465,11 +465,11 @@ function FGISCessi!(dstate, state, pvec, t)
     return nothing
 end
 
-function tipeventGISCessi(u, t, integrator)
+function tipeventGISCessi(u, t, integrator)#Event function for tipping in the GISCessi system
     return (u[3] > 1.0)
 end
 
-tippingcallbackGISCessi = DiscreteCallback(tipeventGISCessi, CascAnalytics.stopsimulation!; save_positions=(false, false))
+tippingcallbackGISCessi = DiscreteCallback(tipeventGISCessi, CascAnalytics.stopsimulation!; save_positions=(false, false))#Callback for tipping in the GISCessi system
 #endregion
 
 end

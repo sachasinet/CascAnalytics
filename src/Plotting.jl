@@ -13,7 +13,7 @@
 # ==============================================================================
 
 #region Select environment
-cd("./Documents/Projects/CascAnalytics")
+#cd("./Documents/Projects/FOLDERNAME")#Path to working folder
 using Pkg
 Pkg.activate(".")
 include("./CascAnalytics.jl")
@@ -486,7 +486,7 @@ begin
     sn2  = brCessi.specialpoint[2].idx
 
     lines!(ax1, brCessi.branch.param[1:sn1],   brCessi.branch.Q[1:sn1];   color = :black)
-    lines!(ax1, brCessi.branch.param[sn1:sn2], brCessi.branch.Q[sn1:sn2]; color = :black, linestyle = :dash)
+    lines!(ax1, brCessi.branch.param[sn1:sn2-10], brCessi.branch.Q[sn1:sn2-10]; color = :black, linestyle = :dash)
     lines!(ax1, brCessi.branch.param[sn2:end], brCessi.branch.Q[sn2:end]; color = :black)
 
     @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
@@ -502,15 +502,13 @@ begin
 
     ax2 = Axis(gb[1, 2], yaxisposition = :right, xticks = [-1.6, -0.8, 0.0])
 
-    iend = brVeg.specialpoint[3].idx
     sn1  = brVeg.specialpoint[1].idx
     sn2  = brVeg.specialpoint[2].idx
     sn3  = brVeg.specialpoint[3].idx
-    sn4  = brVeg.specialpoint[4].idx
 
     lines!(ax2, brVeg.branch.param[1:sn1]   .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[1:sn1];   color = :black)
     lines!(ax2, brVeg.branch.param[sn1:sn2] .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[sn1:sn2]; color = :black, linestyle = :dash)
-    lines!(ax2, brVeg.branch.param[sn2:sn3] .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[sn2:sn3]; color = :black)
+    lines!(ax2, brVeg.branch.param[sn2:end] .- parametersCessiVeg.nupl.Pd, brVeg.branch.T[sn2:end]; color = :black)
 
     @load "./Data/TrajCessiVegg0.62.jld2" r parametersCessiVeg ϵ γ state0 tspan prob t x y P T Q
     lines!(ax2, γ .* (Q .- brCessi.branch.Q[1]), T; color = unsafecolor)
@@ -599,7 +597,7 @@ begin
     f
 end
 
-save("./Manuscript/Figures/Fig4.pdf", f, px_per_unit=1)
+save("./Manuscript/Figures/Fig4.pdf", f, pt_per_unit=1)
 #endregion
 
 #region Fig5
@@ -802,7 +800,7 @@ save("./Manuscript/Figures/Fig5.pdf", f, pt_per_unit=1)
 palette = cgrad([safecolor, unsafecolor], 2, categorical=true)
 
 begin
-    size_inches = (5.3, 5.0)
+    size_inches = (5.3, 4.0)
     size_pt     = 72 .* size_inches
 
     f = Figure(size = size_pt, fontsize = 7, padding = 0)
@@ -1085,11 +1083,9 @@ save("./Manuscript/Figures/FigS1.pdf", f, pt_per_unit=1)
 @load "./Data/brGIS.jld2"
 
 palette = cgrad([safecolor, unsafecolor], 2, categorical=true)
-CascAnalytics.c(statemax, parametersGISCessi.vec, tmax)
 
-parametersGISCessi.vec
 begin
-    size_inches = (5.3, 5.0)
+    size_inches = (5.3, 4.0)
     size_pt     = 72 .* size_inches
 
     f = Figure(size = size_pt, fontsize = 7, padding = 0)
